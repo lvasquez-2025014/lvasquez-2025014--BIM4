@@ -1,0 +1,22 @@
+{
+  "name": "gastos-proyect-backend",
+  "version": "1.0.0",
+  "description": "API REST para gestión de gastos",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.2.0",
+    "tsx": "^4.19.0",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.5.0"
+  }
+}
