@@ -1,0 +1,16 @@
+<div class="activity-list" role="list" [attr.aria-label]="ariaLabel()">
+  @for (item of activities(); track item.name) {
+    <div class="activity-item" role="listitem">
+      <div class="activity-icon" [class.expense]="item.type === 'expense'" [class.income]="item.type === 'income'" aria-hidden="true">
+        {{ item.icon }}
+      </div>
+      <div class="activity-main">
+        <strong>{{ item.name }}</strong>
+        <span>{{ item.category }} · {{ item.date }}</span>
+      </div>
+      <b [class.positive]="item.type === 'income'" [class.negative]="item.type === 'expense'">
+        {{ item.type === 'income' ? '+' : '−' }} {{ formatCurrency(item.amount) }}
+      </b>
+    </div>
+  }
+</div>

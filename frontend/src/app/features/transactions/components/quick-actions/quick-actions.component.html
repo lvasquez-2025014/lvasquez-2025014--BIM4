@@ -1,0 +1,16 @@
+<div class="quick-actions" role="list" [attr.aria-label]="ariaLabel()">
+  @for (action of actions(); track action.route) {
+    <button
+      class="quick-action"
+      (click)="onActionClick(action.route)"
+      role="listitem"
+      type="button"
+    >
+      <span aria-hidden="true">{{ action.icon }}</span>
+      <div>
+        <strong>{{ action.title }}</strong>
+        <small>{{ action.description }}</small>
+      </div>
+    </button>
+  }
+</div>
