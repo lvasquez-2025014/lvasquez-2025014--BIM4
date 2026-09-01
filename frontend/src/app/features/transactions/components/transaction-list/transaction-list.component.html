@@ -1,0 +1,27 @@
+<div class="tx-table">
+  @if (loading) {
+    <div class="tx-loading">Cargando transacciones...</div>
+  } @else if (error) {
+    <div class="tx-error">{{ error }}</div>
+  } @else if (transactions.length === 0) {
+    <div class="tx-empty">No hay transacciones registradas</div>
+  } @else {
+    <div class="tx-row tx-header">
+      <span class="tx-cell desc">Descripción</span>
+      <span class="tx-cell cat">Categoría</span>
+      <span class="tx-cell date">Fecha</span>
+      <span class="tx-cell amount">Monto</span>
+    </div>
+    <div class="tx-row" *ngFor="let tx of transactions">
+      <span class="tx-cell desc">
+        <span class="tx-dot" [class.income]="tx.tipo === 'Ingreso'" [class.expense]="tx.tipo === 'Gasto'"></span>
+        {{ tx.descripcion }}
+      </span>
+      <span class="tx-cell cat">{{ tx.categoria }}</span>
+      <span class="tx-cell date">{{ tx.fecha | date:'dd MMM yyyy' }}</span>
+      <span class="tx-cell amount" [class.positive]="tx.tipo === 'Ingreso'" [class.negative]="tx.tipo === 'Gasto'">
+        {{ tx.tipo === 'Ingreso' ? '+' : '-' }}Q {{ tx.monto | number:'1.2-2' }}
+      </span>
+    </div>
+  }
+</div>

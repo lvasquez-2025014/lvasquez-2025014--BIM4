@@ -1,0 +1,8 @@
+<div class="css-line-chart" role="img" [attr.aria-label]="ariaLabel()">
+  <div #yAxis class="css-bar-y-axis" [id]="'yAxis-' + id()" aria-hidden="true"></div>
+  <div class="css-line-area" [id]="'lineArea-' + id()">
+    <svg #svg [id]="'svg-' + id()" focusable="false" aria-hidden="true"></svg>
+    <div #dots class="css-line-dots" [id]="'dots-' + id()"></div>
+  </div>
+  <div #xLabels class="css-bar-x-labels" [id]="'xLabels-' + id()" aria-hidden="true"></div>
+</div>

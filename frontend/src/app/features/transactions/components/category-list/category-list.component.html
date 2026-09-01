@@ -1,0 +1,11 @@
+<div class="category-list" role="list" [attr.aria-label]="ariaLabel()">
+  @for (item of categories(); track item.name) {
+    <div class="category-row" role="listitem">
+      <div>
+        <strong>{{ item.name }}</strong>
+        <span>{{ item.movements }} movimientos</span>
+      </div>
+      <b>{{ formatCurrency(item.spent) }}</b>
+    </div>
+  }
+</div>

@@ -1,0 +1,10 @@
+<div class="card stat-card" [class]="'card stat-card ' + (trendClass || '')">
+  <div class="stat-label">{{ label() }}</div>
+  <div class="stat-value">{{ value() }}</div>
+  <div class="stat-footer">
+    <span class="trend-icon" [class.positive]="trendClass() === 'positive'" [class.negative]="trendClass() === 'negative'" [class.accent]="trendClass() === 'accent'">
+      {{ trendIcon() }}
+    </span>
+    <span>{{ footerText() }}</span>
+  </div>
+</div>

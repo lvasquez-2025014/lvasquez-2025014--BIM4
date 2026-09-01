@@ -1,0 +1,16 @@
+<div class="candlestick-panel card">
+  <div class="candlestick-header">
+    <div>
+      <div class="candlestick-title-row"><span class="candlestick-symbol">{{ symbol() }}</span><span class="candlestick-sep" aria-hidden="true">·</span><span class="candlestick-subtitle">{{ subtitle() }}</span></div>
+      <div class="candlestick-price-row"><span class="candlestick-price">{{ formattedCurrentPrice() }}</span><span class="candlestick-balance-label">Saldo disponible</span></div>
+    </div>
+  </div>
+  <div class="chart-legend" aria-label="Leyenda del gráfico"><span><i class="legend-dot balance"></i>Saldo acumulado</span></div>
+  <div class="candlestick-body">
+    <div #yAxis class="candlestick-y-axis" aria-hidden="true"></div>
+    <div #chartArea class="candlestick-chart-area" (mousemove)="onMouseMove($event)" (mouseleave)="onMouseLeave()" tabindex="0" role="img" [attr.aria-label]="'Gráfico de saldo acumulado de ' + symbol()">
+      <svg #svg></svg><div #xAxis class="candlestick-x-axis" aria-hidden="true"></div><div #crossV class="candlestick-crosshair-v"></div><div #crossH class="candlestick-crosshair-h"></div>
+      <div #tooltip class="candlestick-tooltip" role="tooltip"><div class="cs-tt-date" [id]="'csTtDate-' + id()"></div><div class="cs-tt-row"><span>Ingresos</span><b [id]="'csTtIncome-' + id()"></b></div><div class="cs-tt-row"><span>Gastos</span><b [id]="'csTtExpense-' + id()"></b></div><div class="cs-tt-row cs-tt-total"><span>Saldo</span><b [id]="'csTtNet-' + id()"></b></div></div>
+    </div>
+  </div>
+</div>

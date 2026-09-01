@@ -1,0 +1,151 @@
+<app-sidebar #sidebar></app-sidebar>
+
+<div class="layout">
+  <app-topbar (menuToggle)="sidebar.openMobileMenu()"></app-topbar>
+
+  <main class="main-content" role="main">
+    <div class="page-header">
+      <div class="header-content">
+        <div class="eyebrow">{{ currentDate() }}</div>
+        <h1 class="page-title">Resumen</h1>
+        <p class="page-subtitle">Controla tus gastos, identifica desviaciones y toma decisiones antes de que afecten tu presupuesto.</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn primary" (click)="navigateToGastos()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Registrar gasto
+        </button>
+      </div>
+    </div>
+
+    <div class="period-selector" role="group" aria-label="Filtrar por período">
+      @for (period of periods; track period.value) {
+        <button
+          class="period-btn"
+          [class.active]="data.currentPeriod() === period.value"
+          (click)="onPeriodChange(period.value)"
+        >
+          {{ period.label }}
+        </button>
+      }
+    </div>
+
+    <div class="stats-grid">
+      <app-stat-card
+        label="Ingresos del período"
+        [value]="formatCurrency(data.stats().income)"
+        footerText="Ingresos registrados"
+        trendIcon="▲"
+        trendClass="positive"
+      ></app-stat-card>
+      <app-stat-card
+        label="Gastos del período"
+        [value]="formatCurrency(data.stats().expense)"
+        footerText="Gastos registrados"
+        trendIcon="▼"
+        trendClass="negative"
+      ></app-stat-card>
+      <app-stat-card
+        label="Ahorrado"
+        [value]="formatCurrency(data.stats().savings)"
+        footerText="Ingresos - Gastos"
+        trendIcon="●"
+        valueClass="accent"
+        trendClass="accent"
+      ></app-stat-card>
+      <app-stat-card
+        label="Disponible"
+        [value]="formatCurrency(data.stats().remaining)"
+        footerText="Saldo actual"
+        trendIcon="●"
+        trendClass="positive"
+      ></app-stat-card>
+    </div>
+
+    <app-candlestick-chart
+      id="main"
+      [symbol]="'Evolución del saldo'"
+      [subtitle]="'Ingresos y gastos del período seleccionado'"
+      [data]="cashFlowData()"
+      [currentPrice]="data.stats().remaining"
+    ></app-candlestick-chart>
+
+    <div class="content-grid">
+      <div class="card chart-panel">
+        <div class="card-header">
+          <h3 class="card-title">Ahorro Acumulado</h3>
+        </div>
+        <div class="card-body">
+          <app-line-chart
+            id="savings"
+            [data]="data.savingsData()"
+            [labels]="data.chartLabels()"
+            [color]="data.savingsData()[data.savingsData().length - 1] < 0 ? '#fb7185' : '#10b981'"
+            [ariaLabel]="'Gráfico de ahorro acumulado por período'"
+          ></app-line-chart>
+        </div>
+      </div>
+
+      <div class="card chart-panel">
+        <div class="card-header">
+          <h3 class="card-title">Saldo Disponible</h3>
+        </div>
+        <div class="card-body">
+          <app-line-chart
+            id="remaining"
+            [data]="data.remainingData()"
+            [labels]="data.chartLabels()"
+            [color]="'#3b82f6'"
+            [ariaLabel]="'Gráfico de saldo disponible por período'"
+          ></app-line-chart>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="card chart-panel">
+        <div class="card-header">
+          <h3 class="card-title">Distribución de Gastos</h3>
+        </div>
+        <div class="card-body">
+          <app-donut-chart
+            id="expenses"
+            [data]="data.categoriesData()"
+            [ariaLabel]="'Distribución de gastos por categoría en el período seleccionado'"
+          ></app-donut-chart>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Gastos recientes</h3>
+        </div>
+        <div class="card-body">
+          <app-activity-list
+            [activities]="data.activities()"
+            [ariaLabel]="'Últimos movimientos registrados'"
+          ></app-activity-list>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Top categorías</h3>
+        </div>
+        <div class="card-body">
+          <app-category-list
+            [categories]="data.categories()"
+            [ariaLabel]="'Categorías con mayor gasto'"
+          ></app-category-list>
+        </div>
+      </div>
+    </div>
+
+    <app-quick-actions
+      [actions]="data.quickActions()"
+      [ariaLabel]="'Acciones rápidas principales'"
+    ></app-quick-actions>
+  </main>
+</div>
