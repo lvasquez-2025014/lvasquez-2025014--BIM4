@@ -8,5 +8,5 @@ export const db = client.db(DB_NAME);
 
 export async function connectDB(): Promise<void> {
   await client.connect();
-  console.log(`Conectado a MongoDB en ${MONGO_URL}/${DB_NAME}`);
+  console.log(`Conectado con la base de datos  ${MONGO_URL}/${DB_NAME}`);
 }
