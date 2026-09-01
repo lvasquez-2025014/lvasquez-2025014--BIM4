@@ -1,13 +1,40 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import jwt from 'jsonwebtoken';
+import * as dotenv from 'dotenv';
+import { OAuth2Client } from 'google-auth-library';
 import { connectDB } from './db.js';
 import { UserService } from './modules/user/services/user.service.js';
 import { ExpenseService } from './modules/expense/services/expense.service.js';
 import type { Expense } from './modules/expense/models/expense.model.js';
 
-const PUERTO = 3000;
-const JWT_SECRET = 'secreto-super-seguro';
+dotenv.config();
 
+const PUERTO = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
+
+if (!PUERTO) {
+  console.error('FATAL ERROR: PUERTO is not defined in the environment.');
+  process.exit(1);
+}
+
+if (!JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined in the environment.');
+  process.exit(1);
+}
+
+if (!JWT_EXPIRES_IN) {
+  console.error('FATAL ERROR: JWT_EXPIRES_IN is not defined in the environment.');
+  process.exit(1);
+}
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+if (!GOOGLE_CLIENT_ID) {
+  console.error('FATAL ERROR: GOOGLE_CLIENT_ID is not defined in the environment.');
+  process.exit(1);
+}
+
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 const users = new UserService();
 const expenses = new ExpenseService();
 
@@ -46,7 +73,7 @@ function requireAuth(req: IncomingMessage, res: ServerResponse): boolean {
     return false;
   }
   try {
-    const payload = jwt.verify(auth.slice(7), JWT_SECRET) as { usuario?: string };
+    const payload = jwt.verify(auth.slice(7), JWT_SECRET!) as { usuario?: string };
     if (payload.usuario) (req as AuthRequest).usuario = payload.usuario;
     return true;
   } catch {
@@ -55,12 +82,9 @@ function requireAuth(req: IncomingMessage, res: ServerResponse): boolean {
   }
 }
 
+//sin uso , crear admin manualmente en la base de datos
 async function seedAdmin(): Promise<void> {
-  const exists = await users.findByUsuario('admin');
-  if (!exists) {
-    await users.create('admin', 'admin123');
-    console.log('Usuario admin creado (admin / admin123)');
-  }
+  // Intentionally left blank. Ensure an admin user exists in the DB before starting.
 }
 
 const server = createServer(async (req, res) => {
@@ -91,7 +115,61 @@ const server = createServer(async (req, res) => {
         sendJson(res, 401, { mensaje: 'Credenciales inválidas' });
         return;
       }
-      const token = jwt.sign({ usuario }, JWT_SECRET, { expiresIn: '2h' });
+      const user = await users.findByUsuario(usuario);
+      const token = jwt.sign({ usuario }, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN as any });
+      sendJson(res, 200, {
+        token,
+        usuario,
+        nombre: user?.nombre || '',
+        foto: user?.foto || ''
+      });
+      return;
+    }
+
+    if (req.method === 'POST' && path === '/api/auth/google') {
+      const { idToken } = (await readBody(req)) as { idToken?: string };
+      if (!idToken) {
+        sendJson(res, 400, { mensaje: 'Token de Google requerido' });
+        return;
+      }
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken,
+          audience: GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        if (!payload || !payload.email) {
+          sendJson(res, 401, { mensaje: 'Token de Google inválido' });
+          return;
+        }
+        const nombre = payload.name || '';
+        const foto = payload.picture || '';
+        console.log('Foto de Google recibida:', foto); // Debug
+        // Buscar o crear usuario con el email de Google
+        let user = await users.findByUsuario(payload.email);
+        if (!user) {
+          // Registrar automáticamente al usuario de Google (sin password)
+          user = await users.create(payload.email, crypto.randomUUID());
+        }
+        // Actualizar nombre y foto de Google
+        await users.updateProfile(payload.email, { nombre, foto });
+        const token = jwt.sign({ usuario: payload.email }, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN as any });
+        sendJson(res, 200, { token, usuario: payload.email, nombre, foto });
+      } catch (err) {
+        console.error('Error verificando token de Google:', err);
+        sendJson(res, 401, { mensaje: 'Token de Google inválido o expirado' });
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && path === '/api/auth/refresh') {
+      if (!requireAuth(req, res)) return;
+      const usuario = (req as AuthRequest).usuario;
+      if (!usuario) {
+        sendJson(res, 401, { mensaje: 'Token sin usuario' });
+        return;
+      }
+      const token = jwt.sign({ usuario }, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN as any });
       sendJson(res, 200, { token, usuario });
       return;
     }
@@ -166,6 +244,12 @@ const server = createServer(async (req, res) => {
         sendJson(res, 200, { mensaje: 'Gasto eliminado' });
         return;
       }
+
+      if (req.method === 'DELETE' && !id && path === '/api/expenses') {
+        await expenses.clearAll();
+        sendJson(res, 200, { mensaje: 'Todos los gastos eliminados' });
+        return;
+      }
     }
 
     sendJson(res, 404, { mensaje: 'Ruta no encontrada' });
@@ -178,7 +262,7 @@ const server = createServer(async (req, res) => {
 async function start(): Promise<void> {
   try {
     await connectDB();
-    await seedAdmin();
+    //await seedAdmin();
     server.listen(PUERTO, () => {
       console.log(`Servidor corriendo en http://localhost:${PUERTO}`);
     });

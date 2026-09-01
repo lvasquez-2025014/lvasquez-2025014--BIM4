@@ -29,6 +29,15 @@ export class UserService {
     return { hash, salt };
   }
 
+  async updateProfile(usuario: string, data: { nombre?: string; foto?: string }): Promise<void> {
+    const update: Record<string, string> = {};
+    if (data.nombre) update.nombre = data.nombre;
+    if (data.foto) update.foto = data.foto;
+    if (Object.keys(update).length > 0) {
+      await this.collection.updateOne({ usuario }, { $set: update });
+    }
+  }
+
   private verifyPassword(password: string, salt: string, hash: string): boolean {
     const candidate = scryptSync(password, salt, 64);
     const stored = Buffer.from(hash, 'hex');

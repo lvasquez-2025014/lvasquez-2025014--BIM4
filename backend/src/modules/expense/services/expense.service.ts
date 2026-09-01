@@ -35,4 +35,8 @@ export class ExpenseService {
     const result = await this.collection.deleteOne({ _id: id });
     return result.deletedCount > 0;
   }
+
+  async clearAll(): Promise<void> {
+    await this.collection.deleteMany({});
+  }
 }
