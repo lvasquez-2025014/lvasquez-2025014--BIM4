@@ -11,6 +11,6 @@ export class NotFoundPageComponent {
   private router = inject(Router);
 
   volverAlInicio(): void {
-    this.router.navigate(['/login']);
+    this.router.navigate(['/gastos']);
   }
 }
