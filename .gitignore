@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Builds / artifacts
+dist/
+build/
+backend/dist/
+frontend/dist/
+
+# Angular cache
+.angular/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
