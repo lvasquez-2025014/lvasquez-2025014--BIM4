@@ -1,18 +1,33 @@
-import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { AuthService } from '../../auth/services/auth.service';
+import { Observable, from } from 'rxjs';
+import { ApiService } from '../../../core/services/api.service';
 import type { Transaction } from '../models/transaction.model';
+
+export interface CreateTransactionDto{
+  descripcion: string;
+  monto: number;
+  tipo: 'Ingreso' | 'Gasto';
+  categoria: string;
+  fecha: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class TransactionService {
-  private http = inject(HttpClient);
-  private auth = inject(AuthService);
-  private readonly apiUrl = 'http://localhost:3000';
+  private api = inject(ApiService);
 
   getExpenses(): Observable<Transaction[]> {
-    return this.http.get<Transaction[]>(`${this.apiUrl}/api/expenses`, {
-      headers: { Authorization: `Bearer ${this.auth.getToken()}` },
-    });
+    return from(this.api.get<Transaction[]>('/api/expenses'));
+  }
+
+  addExpense(data: CreateTransactionDto): Observable<Transaction> {
+    return from(this.api.post<Transaction>('/api/expenses', data));
+  }
+
+  updateExpense(id: string, data: Partial<CreateTransactionDto>): Observable<Transaction> {
+    return from(this.api.put<Transaction>(`/api/expenses/${id}`, data));
+  }
+
+  deleteExpense(id: string): Observable<void> {
+    return from(this.api.delete<void>(`/api/expenses/${id}`));
   }
 }
