@@ -4,6 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TopbarComponent } from '../../components/topbar/topbar.component';
 import { TransactionService, CreateTransactionDto } from '../../services/transaction.service';
+import { CategoryService } from '../../services/category.service';
+import { CurrencyService } from '../../../../core/services/currency.service';
+import { NotificationService } from '../../../../core/services/notification.service';
+import { getLocalTodayString, formatDisplayDate, toLocalDateInputString, parseLocalDate, isFutureDate } from '../../../../core/utils/date.utils';
 import type { Transaction } from '../../models/transaction.model';
 
 @Component({
@@ -15,13 +19,18 @@ import type { Transaction } from '../../models/transaction.model';
 })
 export class GastosPageComponent implements OnInit {
   private txService = inject(TransactionService);
+  private catService = inject(CategoryService);
+  private notification = inject(NotificationService);
+  readonly currency = inject(CurrencyService);
 
+  allTransactions = signal<Transaction[]>([]);
   expenses = signal<Transaction[]>([]);
   loading = signal(false);
   showModal = signal(false);
   editingId = signal<string | null>(null);
   confirmDeleteId = signal<string | null>(null);
   searchQuery = signal('');
+  errorMessage = signal<string | null>(null);
 
   // Form fields
   form = {
@@ -29,20 +38,10 @@ export class GastosPageComponent implements OnInit {
     monto: 0,
     tipo: 'Gasto' as 'Ingreso' | 'Gasto',
     categoria: '',
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: getLocalTodayString(),
   };
 
-  categorias = [
-    'Alimentación',
-    'Transporte',
-    'Vivienda',
-    'Servicios',
-    'Salud',
-    'Educación',
-    'Entretenimiento',
-    'Ropa',
-    'Otros',
-  ];
+  categorias = signal<string[]>([]);
 
   filteredExpenses = computed(() => {
     let list = this.expenses();
@@ -55,39 +54,76 @@ export class GastosPageComponent implements OnInit {
       );
     }
     // Sort by date descending
-    return [...list].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    return [...list].sort((a, b) => parseLocalDate(b.fecha).getTime() - parseLocalDate(a.fecha).getTime());
   });
 
-  totalGastos = computed(() =>
-    this.expenses().reduce((s, e) => s + e.monto, 0)
+  totalIngresos = computed(() =>
+    this.allTransactions()
+      .filter(t => t.tipo === 'Ingreso')
+      .reduce((sum, t) => sum + (Number(t.monto) || 0), 0)
   );
+
+  totalGastos = computed(() =>
+    this.expenses().reduce((s, e) => s + (Number(e.monto) || 0), 0)
+  );
+
   cantidadGastos = computed(() =>
     this.expenses().length
   );
+
   promedioGasto = computed(() =>
     this.cantidadGastos() > 0 ? this.totalGastos() / this.cantidadGastos() : 0
   );
 
+  saldoDisponible = computed(() =>
+    Math.max(0, this.totalIngresos() - this.totalGastos())
+  );
+
+  saldoDisponibleParaGasto = computed(() => {
+    const editId = this.editingId();
+    if (editId) {
+      const current = this.allTransactions().find(t => t.id === editId);
+      const currentAmount = current ? (Number(current.monto) || 0) : 0;
+      return Math.max(0, (this.totalIngresos() - this.totalGastos()) + currentAmount);
+    }
+    return Math.max(0, this.totalIngresos() - this.totalGastos());
+  });
+
+  today = getLocalTodayString();
+
+  isMontoExcedido(): boolean {
+    const monto = Number(this.form.monto) || 0;
+    return monto > 0 && monto > this.saldoDisponibleParaGasto();
+  }
+
+  isFechaFutura(): boolean {
+    return isFutureDate(this.form.fecha);
+  }
+
   ngOnInit(): void {
     this.fetchExpenses();
+    this.catService.getCategories().subscribe({
+      next: (cats) => {
+        const g = cats.filter(c => c.tipo === 'Gasto').map(c => c.nombre);
+        this.categorias.set(g.length > 0 ? g : ['Alimentación', 'Transporte', 'Servicios', 'Otros']);
+      }
+    });
   }
 
   fetchExpenses(): void {
     this.loading.set(true);
     this.txService.getExpenses().subscribe({
       next: (data) => {
-        // Backend returns _id, map to id and filter only Gastos
-        const mapped = data
-          .map((d: any) => ({
-            id: d._id || d.id,
-            descripcion: d.descripcion,
-            monto: d.monto,
-            tipo: d.tipo,
-            categoria: d.categoria,
-            fecha: d.fecha,
-          }))
-          .filter((e: any) => e.tipo === 'Gasto');
-        this.expenses.set(mapped);
+        const allMapped: Transaction[] = data.map((d: any) => ({
+          id: d._id || d.id,
+          descripcion: d.descripcion,
+          monto: Number(d.monto) || 0,
+          tipo: d.tipo,
+          categoria: d.categoria,
+          fecha: d.fecha,
+        }));
+        this.allTransactions.set(allMapped);
+        this.expenses.set(allMapped.filter((e) => e.tipo === 'Gasto'));
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
@@ -95,33 +131,64 @@ export class GastosPageComponent implements OnInit {
   }
 
   openCreate(): void {
+    this.errorMessage.set(null);
     this.editingId.set(null);
     this.resetForm();
     this.showModal.set(true);
   }
 
   openEdit(tx: Transaction): void {
+    this.errorMessage.set(null);
     this.editingId.set(tx.id);
     this.form.descripcion = tx.descripcion;
     this.form.monto = tx.monto;
     this.form.tipo = 'Gasto';
     this.form.categoria = tx.categoria;
-    this.form.fecha = new Date(tx.fecha).toISOString().split('T')[0];
+    this.form.fecha = toLocalDateInputString(tx.fecha);
     this.showModal.set(true);
   }
 
   closeModal(): void {
     this.showModal.set(false);
     this.editingId.set(null);
+    this.errorMessage.set(null);
     this.resetForm();
   }
 
   onSubmit(): void {
+    this.errorMessage.set(null);
     if (!this.form.descripcion.trim() || !this.form.monto || !this.form.categoria) return;
+
+    if (this.isFechaFutura()) {
+      const msg = 'No puedes registrar un movimiento para un día que aún no ha llegado';
+      this.errorMessage.set(msg);
+      this.notification.show({
+        title: 'Fecha no válida',
+        message: msg,
+        type: 'warning',
+        isPersistent: false
+      });
+      return;
+    }
+
+    const monto = Number(this.form.monto) || 0;
+    const disponible = this.saldoDisponibleParaGasto();
+
+    if (monto > disponible) {
+      const msg = 'No puedes gastar porque no tienes el dinero suficiente';
+      this.errorMessage.set(msg);
+      this.notification.show({
+        title: 'Fondos insuficientes',
+        message: msg,
+        type: 'warning',
+        isPersistent: false
+      });
+      return;
+    }
 
     const dto: CreateTransactionDto = {
       descripcion: this.form.descripcion.trim(),
-      monto: this.form.monto,
+      monto: monto,
       tipo: 'Gasto',
       categoria: this.form.categoria,
       fecha: this.form.fecha,
@@ -133,14 +200,42 @@ export class GastosPageComponent implements OnInit {
         next: () => {
           this.closeModal();
           this.fetchExpenses();
+          this.notification.show({
+            title: 'Gasto actualizado',
+            message: 'El gasto ha sido actualizado correctamente.',
+            type: 'success'
+          });
         },
+        error: (err) => {
+          const msg = err.error?.message || 'No puedes gastar porque no tienes el dinero suficiente';
+          this.errorMessage.set(msg);
+          this.notification.show({
+            title: 'Atención',
+            message: msg,
+            type: 'warning'
+          });
+        }
       });
     } else {
       this.txService.addExpense(dto).subscribe({
         next: () => {
           this.closeModal();
           this.fetchExpenses();
+          this.notification.show({
+            title: 'Gasto registrado',
+            message: 'El gasto ha sido registrado exitosamente.',
+            type: 'success'
+          });
         },
+        error: (err) => {
+          const msg = err.error?.message || 'No puedes gastar porque no tienes el dinero suficiente';
+          this.errorMessage.set(msg);
+          this.notification.show({
+            title: 'Atención',
+            message: msg,
+            type: 'warning'
+          });
+        }
       });
     }
   }
@@ -163,12 +258,11 @@ export class GastosPageComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return 'Q ' + amount.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return this.currency.format(amount);
   }
 
-  formatDate(dateStr: string): string {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('es-GT', { day: '2-digit', month: 'short', year: 'numeric' });
+  formatDate(dateStr: string | Date): string {
+    return formatDisplayDate(dateStr);
   }
 
   private resetForm(): void {
@@ -176,6 +270,6 @@ export class GastosPageComponent implements OnInit {
     this.form.monto = 0;
     this.form.tipo = 'Gasto';
     this.form.categoria = '';
-    this.form.fecha = new Date().toISOString().split('T')[0];
+    this.form.fecha = getLocalTodayString();
   }
 }

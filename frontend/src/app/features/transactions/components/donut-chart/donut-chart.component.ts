@@ -5,9 +5,11 @@ import {
   ElementRef,
   AfterViewInit,
   OnDestroy,
-  effect
+  effect,
+  inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyService } from '../../../../core/services/currency.service';
 
 interface DonutData {
   labels: string[];
@@ -22,6 +24,8 @@ interface DonutData {
   styleUrl: './donut-chart.component.css'
 })
 export class DonutChartComponent implements AfterViewInit, OnDestroy {
+  private currency = inject(CurrencyService);
+
   id = input.required<string>();
   data = input.required<DonutData>();
   ariaLabel = input('Gráfico de dona');
@@ -29,6 +33,7 @@ export class DonutChartComponent implements AfterViewInit, OnDestroy {
   constructor() {
     effect(() => {
       this.data(); // Trigger dependency
+      this.currency.code(); // Trigger dependency
       setTimeout(() => this.render(), 0);
     });
   }
@@ -36,7 +41,7 @@ export class DonutChartComponent implements AfterViewInit, OnDestroy {
   @ViewChild('donutSvg') svgRef!: ElementRef<SVGSVGElement>;
   @ViewChild('donutLegend') legendRef!: ElementRef<HTMLDivElement>;
 
-  private donutColors = ['#10b981', '#3b82f6', '#8b5cf6', '#f43f5e', '#f59e0b', '#06b6d4', '#ec4899', '#14b8a6'];
+  private donutColors = ['var(--accent, #6366f1)', '#3b82f6', '#8b5cf6', '#f43f5e', '#f59e0b', '#06b6d4', '#ec4899', '#a855f7'];
 
   ngAfterViewInit(): void {
     this.render();
@@ -95,6 +100,6 @@ export class DonutChartComponent implements AfterViewInit, OnDestroy {
   }
 
   private formatCurrency(value: number): string {
-    return 'Q ' + value.toLocaleString('es-GT');
+    return this.currency.format(value);
   }
 }

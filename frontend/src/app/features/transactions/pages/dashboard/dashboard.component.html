@@ -6,7 +6,10 @@
   <main class="main-content" role="main">
     <div class="page-header">
       <div class="header-content">
-        <div class="eyebrow">{{ currentDate() }}</div>
+        <div class="eyebrow">
+          <span class="beacon"></span>
+          <span>PANEL PRINCIPAL // {{ currentDate() }}</span>
+        </div>
         <h1 class="page-title">Resumen</h1>
         <p class="page-subtitle">Controla tus gastos, identifica desviaciones y toma decisiones antes de que afecten tu presupuesto.</p>
       </div>
@@ -80,7 +83,7 @@
             id="savings"
             [data]="data.savingsData()"
             [labels]="data.chartLabels()"
-            [color]="data.savingsData()[data.savingsData().length - 1] < 0 ? '#fb7185' : '#10b981'"
+            [color]="data.savingsData()[data.savingsData().length - 1] < 0 ? '#fb7185' : 'var(--accent)'"
             [ariaLabel]="'Gráfico de ahorro acumulado por período'"
           ></app-line-chart>
         </div>

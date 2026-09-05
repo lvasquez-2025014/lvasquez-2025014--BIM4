@@ -1,0 +1,252 @@
+<app-sidebar #sidebar></app-sidebar>
+
+<div class="layout">
+  <app-topbar (menuToggle)="sidebar.openMobileMenu()"></app-topbar>
+
+  <main class="main-content" role="main">
+    <div class="ambient-glow" aria-hidden="true"></div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="eyebrow">
+          <span class="beacon"></span>
+          <span>ADMINISTRACIÓN DEL SISTEMA // GESTIÓN DE ACCESOS</span>
+        </div>
+        <h1 class="page-title">Gestión de Usuarios</h1>
+        <p class="page-subtitle">
+          Administra las cuentas del sistema, asigna privilegios de Cliente o Administrador y supervisa los accesos corporativos.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn secondary" (click)="exportUsersCSV()" type="button" id="btn-export-users">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Exportar Lista
+        </button>
+        <button class="btn primary" (click)="openCreate()" type="button" id="btn-nuevo-usuario">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          + Nuevo Usuario
+        </button>
+      </div>
+    </div>
+
+    <!-- 3 Metrics KPI Cards -->
+    <div class="metrics-grid">
+      <!-- Total Cuentas -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Total Cuentas Registradas</span>
+          <div class="metric-icon primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value">{{ totalUsers() }}</span>
+          <span class="metric-subtext">usuarios en BD</span>
+        </div>
+        <div class="metric-foot">
+          <span class="foot-delta safe">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Base de datos MongoDB activa
+          </span>
+        </div>
+      </div>
+
+      <!-- Administradores -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Administradores</span>
+          <div class="metric-icon accent">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value safe">{{ totalAdmins() }}</span>
+          <span class="metric-subtext">cuentas con control total</span>
+        </div>
+        <div class="metric-foot">
+          <span class="status-pill safe">Administrador</span>
+        </div>
+      </div>
+
+      <!-- Clientes -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Clientes / Usuarios Estándar</span>
+          <div class="metric-icon safe">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a6 6 0 0 1 12 0v2"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value">{{ totalClients() }}</span>
+          <span class="metric-subtext">clientes con acceso normal</span>
+        </div>
+        <div class="metric-foot">
+          <span class="foot-text">Uso estándar de la aplicación</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="toolbar-row">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Buscar por identificador, nombre o rol..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
+      </div>
+      <div class="toolbar-info">
+        <span>Mostrando {{ filteredUsers().length }} usuarios</span>
+      </div>
+    </div>
+
+    <!-- Users Table Card -->
+    <div class="table-card">
+      <div class="table-container">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Nombre Completo</th>
+              <th>Rol Asignado</th>
+              <th>Fecha de Registro</th>
+              <th class="text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of filteredUsers(); track u.id) {
+              <tr [class.current-user-row]="u.usuario === currentUsername()">
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar" [class.admin-avatar]="u.rol === 'admin'">
+                      <span>{{ u.nombre.charAt(0).toUpperCase() }}</span>
+                    </div>
+                    <div>
+                      <strong class="user-login">{{ u.usuario }}</strong>
+                      <span class="user-email-sub">{{ u.usuario }}&#64;vought.corp</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="user-name">{{ u.nombre }}</span>
+                  <span class="badge-self" *ngIf="u.usuario === currentUsername()">TÚ</span>
+                </td>
+                <td>
+                  <span class="role-badge" [class.role-admin]="u.rol === 'admin'" [class.role-user]="u.rol === 'user'">
+                    <span class="role-dot"></span>
+                    {{ u.rol === 'admin' ? 'ADMINISTRADOR' : 'CLIENTE' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="date-cell">{{ formatDate(u.createdAt) }}</span>
+                </td>
+                <td class="text-right">
+                  <div class="actions-group">
+                    <button class="btn-action edit" type="button" (click)="openEdit(u)" title="Editar usuario y rol">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </button>
+                    <button
+                      class="btn-action delete"
+                      type="button"
+                      [disabled]="u.usuario === currentUsername()"
+                      [title]="u.usuario === currentUsername() ? 'No puedes eliminar tu propia cuenta' : 'Eliminar usuario'"
+                      (click)="deleteUser(u)"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="empty-state">
+                  No se encontraron usuarios coincidentes con la búsqueda.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal Nuevo / Editar Usuario -->
+    @if (showModal()) {
+      <div class="modal-backdrop" (click)="closeModal()">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div>
+              <div class="eyebrow">CONTROL DE ACCESO VOUGHT</div>
+              <h2 class="modal-title">{{ editingUser() ? 'Editar Usuario' : 'Nuevo Usuario' }}</h2>
+            </div>
+            <button class="btn-close" (click)="closeModal()" aria-label="Cerrar modal">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <form (ngSubmit)="saveUser()" class="modal-body">
+            <div class="form-group">
+              <label for="modalUsuario">Identificador de Usuario</label>
+              <input
+                id="modalUsuario"
+                type="text"
+                [(ngModel)]="form.usuario"
+                name="usuario"
+                [disabled]="!!editingUser()"
+                placeholder="Ej. cliente_vought, maria.lopez"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="modalNombre">Nombre Completo</label>
+              <input
+                id="modalNombre"
+                type="text"
+                [(ngModel)]="form.nombre"
+                name="nombre"
+                placeholder="Ej. María López Morales"
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="modalPassword">
+                Contraseña {{ editingUser() ? '(dejar en blanco para mantener la actual)' : '' }}
+              </label>
+              <input
+                id="modalPassword"
+                type="password"
+                [(ngModel)]="form.password"
+                name="password"
+                placeholder="••••••••"
+                [required]="!editingUser()"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="modalRol">Rol y Privilegios</label>
+              <select id="modalRol" [(ngModel)]="form.rol" name="rol" [disabled]="editingUser()?.usuario === currentUsername()">
+                <option value="user">Cliente (Usuario Estándar - Gestión Financiera)</option>
+                <option value="admin">Administrador (Control Total + Gestión de Usuarios)</option>
+              </select>
+              <small class="field-hint" *ngIf="editingUser()?.usuario === currentUsername()">
+                No puedes cambiar el rol de tu propia cuenta activa en esta sesión.
+              </small>
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" class="btn secondary" (click)="closeModal()">Cancelar</button>
+              <button type="submit" class="btn primary">
+                {{ editingUser() ? 'Actualizar Usuario' : 'Crear Usuario' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+  </main>
+</div>

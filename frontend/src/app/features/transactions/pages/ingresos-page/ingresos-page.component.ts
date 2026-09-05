@@ -4,6 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TopbarComponent } from '../../components/topbar/topbar.component';
 import { TransactionService, CreateTransactionDto } from '../../services/transaction.service';
+import { CategoryService } from '../../services/category.service';
+import { CurrencyService } from '../../../../core/services/currency.service';
+import { NotificationService } from '../../../../core/services/notification.service';
+import { getLocalTodayString, formatDisplayDate, toLocalDateInputString, parseLocalDate, isFutureDate } from '../../../../core/utils/date.utils';
 import type { Transaction } from '../../models/transaction.model';
 
 @Component({
@@ -15,6 +19,9 @@ import type { Transaction } from '../../models/transaction.model';
 })
 export class IngresosPageComponent implements OnInit {
   private txService = inject(TransactionService);
+  private catService = inject(CategoryService);
+  private notification = inject(NotificationService);
+  readonly currency = inject(CurrencyService);
 
   expenses = signal<Transaction[]>([]);
   loading = signal(false);
@@ -22,6 +29,13 @@ export class IngresosPageComponent implements OnInit {
   editingId = signal<string | null>(null);
   confirmDeleteId = signal<string | null>(null);
   searchQuery = signal('');
+  errorMessage = signal<string | null>(null);
+
+  today = getLocalTodayString();
+
+  isFechaFutura(): boolean {
+    return isFutureDate(this.form.fecha);
+  }
 
   // Form fields
   form = {
@@ -29,15 +43,10 @@ export class IngresosPageComponent implements OnInit {
     monto: 0,
     tipo: 'Ingreso' as 'Ingreso' | 'Gasto',
     categoria: '',
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: getLocalTodayString(),
   };
 
-  categorias = [
-    'Salario',
-    'Freelance',
-    'Ahorro',
-    'Otros',
-  ];
+  categorias = signal<string[]>([]);
 
   filteredExpenses = computed(() => {
     let list = this.expenses();
@@ -50,7 +59,7 @@ export class IngresosPageComponent implements OnInit {
       );
     }
     // Sort by date descending
-    return [...list].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    return [...list].sort((a, b) => parseLocalDate(b.fecha).getTime() - parseLocalDate(a.fecha).getTime());
   });
 
   totalIngresos = computed(() =>
@@ -65,6 +74,12 @@ export class IngresosPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.fetchExpenses();
+    this.catService.getCategories().subscribe({
+      next: (cats) => {
+        const ing = cats.filter(c => c.tipo === 'Ingreso').map(c => c.nombre);
+        this.categorias.set(ing.length > 0 ? ing : ['Salario', 'Freelance', 'Ahorro', 'Otros']);
+      }
+    });
   }
 
   fetchExpenses(): void {
@@ -90,29 +105,45 @@ export class IngresosPageComponent implements OnInit {
   }
 
   openCreate(): void {
+    this.errorMessage.set(null);
     this.editingId.set(null);
     this.resetForm();
     this.showModal.set(true);
   }
 
   openEdit(tx: Transaction): void {
+    this.errorMessage.set(null);
     this.editingId.set(tx.id);
     this.form.descripcion = tx.descripcion;
     this.form.monto = tx.monto;
     this.form.tipo = 'Ingreso';
     this.form.categoria = tx.categoria;
-    this.form.fecha = new Date(tx.fecha).toISOString().split('T')[0];
+    this.form.fecha = toLocalDateInputString(tx.fecha);
     this.showModal.set(true);
   }
 
   closeModal(): void {
     this.showModal.set(false);
     this.editingId.set(null);
+    this.errorMessage.set(null);
     this.resetForm();
   }
 
   onSubmit(): void {
+    this.errorMessage.set(null);
     if (!this.form.descripcion.trim() || !this.form.monto || !this.form.categoria) return;
+
+    if (this.isFechaFutura()) {
+      const msg = 'No puedes registrar un movimiento para un día que aún no ha llegado';
+      this.errorMessage.set(msg);
+      this.notification.show({
+        title: 'Fecha no válida',
+        message: msg,
+        type: 'warning',
+        isPersistent: false
+      });
+      return;
+    }
 
     const dto: CreateTransactionDto = {
       descripcion: this.form.descripcion.trim(),
@@ -128,14 +159,42 @@ export class IngresosPageComponent implements OnInit {
         next: () => {
           this.closeModal();
           this.fetchExpenses();
+          this.notification.show({
+            title: 'Ingreso actualizado',
+            message: 'El ingreso ha sido actualizado exitosamente.',
+            type: 'success'
+          });
         },
+        error: (err) => {
+          const msg = err.error?.message || 'Error al actualizar el ingreso';
+          this.errorMessage.set(msg);
+          this.notification.show({
+            title: 'Atención',
+            message: msg,
+            type: 'warning'
+          });
+        }
       });
     } else {
       this.txService.addExpense(dto).subscribe({
         next: () => {
           this.closeModal();
           this.fetchExpenses();
+          this.notification.show({
+            title: 'Ingreso registrado',
+            message: 'El ingreso ha sido registrado exitosamente.',
+            type: 'success'
+          });
         },
+        error: (err) => {
+          const msg = err.error?.message || 'Error al registrar el ingreso';
+          this.errorMessage.set(msg);
+          this.notification.show({
+            title: 'Atención',
+            message: msg,
+            type: 'warning'
+          });
+        }
       });
     }
   }
@@ -158,12 +217,11 @@ export class IngresosPageComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return 'Q ' + amount.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return this.currency.format(amount);
   }
 
-  formatDate(dateStr: string): string {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('es-GT', { day: '2-digit', month: 'short', year: 'numeric' });
+  formatDate(dateStr: string | Date): string {
+    return formatDisplayDate(dateStr);
   }
 
   private resetForm(): void {
@@ -171,6 +229,6 @@ export class IngresosPageComponent implements OnInit {
     this.form.monto = 0;
     this.form.tipo = 'Ingreso';
     this.form.categoria = '';
-    this.form.fecha = new Date().toISOString().split('T')[0];
+    this.form.fecha = getLocalTodayString();
   }
 }
