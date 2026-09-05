@@ -1,4 +1,4 @@
-import { Component, inject, ViewChild, ElementRef, AfterViewInit, QueryList, ViewChildren, HostListener, OnDestroy } from '@angular/core';
+import { Component, inject, ViewChild, ElementRef, AfterViewInit, QueryList, ViewChildren, HostListener, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import gsap from 'gsap';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -11,10 +11,14 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './login-page.component.html',
   styleUrl: './login-page.component.css',
 })
-export class LoginPageComponent implements AfterViewInit {
+export class LoginPageComponent implements AfterViewInit, OnDestroy {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
+
+  private heroInterval: any;
+  private isTransitioning = false;
 
   private _mensajeError = '';
   get mensajeError() { return this._mensajeError; }
@@ -125,9 +129,13 @@ export class LoginPageComponent implements AfterViewInit {
           this.auth.guardarSesion(respuesta);
           setTimeout(() => this.router.navigate(['/gastos']), 900);
         },
-        error: () => {
+        error: (err: any) => {
           this.cargando = false;
-          this.mensajeError = 'Error al verificar la cuenta de Google';
+          if (err.code === 'ERR_NETWORK' || !err.response) {
+            this.mensajeError = 'Servidor desconectado. Asegúrate de ejecutar "pnpm start" en la carpeta backend.';
+          } else {
+            this.mensajeError = err.response?.data?.message || 'Error al verificar la cuenta de Google';
+          }
         },
       });
     } else {
@@ -165,6 +173,13 @@ export class LoginPageComponent implements AfterViewInit {
     });
   }
 
+  ngOnDestroy(): void {
+    if (this.heroInterval) {
+      clearInterval(this.heroInterval);
+    }
+    gsap.killTweensOf(['.hero-badge', '.hero-line', '.hero-words', '.hero-subtitle', '.stat-number', '.api-error']);
+  }
+
   private initTextAnimation() {
     // Timeline de entrada escalonada para todos los elementos del hero
     const entranceTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
@@ -191,53 +206,48 @@ export class LoginPageComponent implements AfterViewInit {
         duration: 0.8,
       }, '-=0.3');
 
-    // Timeline de rotación de TODO el texto (título, palabra, subtítulo, badge)
-    setInterval(() => {
+    // Timeline de rotación seguro sin duplicación ni glitch de texto
+    this.heroInterval = setInterval(() => {
+      if (this.isTransitioning) return;
+      this.isTransitioning = true;
+
       const elementsToFade = ['.hero-badge', '.hero-line', '.hero-words', '.hero-subtitle'];
+      gsap.killTweensOf(elementsToFade);
       
       gsap.to(elementsToFade, {
         opacity: 0,
-        y: -20,
-        duration: 0.5,
-        stagger: 0.1,
-        ease: 'power3.in',
+        y: -12,
+        duration: 0.35,
+        ease: 'power2.in',
         onComplete: () => {
           this.currentHeroIndex = (this.currentHeroIndex + 1) % this.heroContents.length;
-          // Forzar la detección de cambios para Angular si es necesario, pero setInterval lo hace.
-          // Restablecemos la posición inicial y animamos de entrada
-          gsap.set(elementsToFade, { y: 20 });
-          gsap.to(elementsToFade, {
-            opacity: 1,
-            y: 0,
-            duration: 0.5,
-            stagger: 0.1,
-            ease: 'power3.out'
-          });
+          this.cdr.detectChanges(); // Forzar actualización de Angular antes de animar entrada
+          
+          gsap.fromTo(elementsToFade, 
+            { opacity: 0, y: 12 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.45,
+              stagger: 0.05,
+              ease: 'power2.out',
+              onComplete: () => {
+                this.isTransitioning = false;
+              }
+            }
+          );
         }
       });
-    }, 4500);
+    }, 4800);
 
-    // Animar los números de las estadísticas con un efecto de conteo
-    const statNumbers = document.querySelectorAll('.stat-number');
-    statNumbers.forEach((el) => {
-      gsap.from(el, {
-        textContent: '0',
-        duration: 2,
-        delay: 1.2,
-        ease: 'power2.out',
-        snap: { textContent: 1 },
-        onUpdate: function() {
-          // Mantener el texto original ya que no son solo números
-        }
-      });
-      gsap.from(el, {
-        opacity: 0,
-        y: 15,
-        duration: 0.8,
-        delay: 1,
-        ease: 'power3.out',
-        stagger: 0.15,
-      });
+    // Animación suave de entrada de estadísticas sin corromper el texto
+    gsap.from('.stat-number', {
+      opacity: 0,
+      y: 12,
+      duration: 0.8,
+      delay: 0.8,
+      ease: 'power3.out',
+      stagger: 0.15,
     });
   }
 
