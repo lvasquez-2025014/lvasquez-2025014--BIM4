@@ -1,5 +1,6 @@
-import { Component, input } from '@angular/core';
+import { Component, input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyService } from '../../../../core/services/currency.service';
 
 export interface CategoryRow {
   name: string;
@@ -15,10 +16,12 @@ export interface CategoryRow {
   styleUrl: './category-list.component.css'
 })
 export class CategoryListComponent {
+  private currency = inject(CurrencyService);
+
   categories = input.required<CategoryRow[]>();
   ariaLabel = input('Top categorías');
 
   formatCurrency(value: number): string {
-    return 'Q ' + value.toLocaleString('es-GT');
+    return this.currency.format(value);
   }
 }

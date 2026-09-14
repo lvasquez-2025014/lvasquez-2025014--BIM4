@@ -1,7 +1,8 @@
-import { Component, HostListener, signal, inject } from '@angular/core';
+import { Component, HostListener, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd, Event } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { AuthService } from '../../../auth/services/auth.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -12,11 +13,14 @@ import { filter } from 'rxjs/operators';
 })
 export class SidebarComponent {
   private router = inject(Router);
+  private auth = inject(AuthService);
 
   activePage = signal<string>('resumen');
   isCollapsed = signal(false);
   isMobileMenuOpen = signal(false);
   logoFailed = signal(false);
+
+  readonly isAdmin = computed(() => this.auth.isAdmin());
 
   onLogoError(): void {
     this.logoFailed.set(true);
@@ -35,6 +39,7 @@ export class SidebarComponent {
         '/categorias': 'categorias',
         '/movimientos': 'movimientos',
         '/reportes': 'reportes',
+        '/usuarios': 'usuarios',
         '/configuracion': 'configuracion'
       };
       const page = pageMap[url] || 'resumen';
@@ -52,6 +57,7 @@ export class SidebarComponent {
       categorias: '/categorias',
       movimientos: '/movimientos',
       reportes: '/reportes',
+      usuarios: '/usuarios',
       configuracion: '/configuracion'
     };
     this.router.navigate([routes[page] || '/gastos']);

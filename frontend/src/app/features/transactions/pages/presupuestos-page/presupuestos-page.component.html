@@ -1,0 +1,243 @@
+<app-sidebar #sidebar></app-sidebar>
+
+<div class="layout">
+  <app-topbar (menuToggle)="sidebar.openMobileMenu()"></app-topbar>
+
+  <main class="main-content" role="main">
+    <!-- Atmospheric subtle glows -->
+    <div class="ambient-glow" aria-hidden="true"></div>
+
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="eyebrow">
+          <span class="beacon"></span>
+          <span>PLANIFICACIÓN FINANCIERA // EJECUCIÓN FISCAL</span>
+        </div>
+        <h1 class="page-title">Presupuestos</h1>
+        <p class="page-subtitle">
+          Define límites mensuales de gasto por departamento o categoría y monitorea el cumplimiento y desvíos en tiempo real con auditoría continua.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn secondary" (click)="exportReport()" type="button" id="btn-export-presupuestos">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Exportar Informe
+        </button>
+        <button class="btn primary" (click)="openCreate()" type="button" id="btn-nuevo-presupuesto">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          + Nuevo Presupuesto
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 KPI Metrics Row -->
+    <div class="metrics-grid">
+      <!-- KPI 1 -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Total Presupuestado</span>
+          <div class="metric-icon primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="currency-symbol">{{ currency.symbol() }}</span>
+          <span class="metric-value">{{ formatConvertedNumber(totalPresupuestado()) }}</span>
+        </div>
+        <div class="metric-foot">
+          <span class="foot-text">Para el ciclo fiscal mensual</span>
+          <span class="foot-dot"></span>
+          <span class="foot-tag">30 días</span>
+        </div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Ejecutado a la Fecha</span>
+          <div class="metric-icon accent">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="currency-symbol">{{ currency.symbol() }}</span>
+          <span class="metric-value">{{ formatConvertedNumber(totalEjecutado()) }}</span>
+        </div>
+        <div class="metric-progress-wrapper">
+          <div class="progress-meta">
+            <span>Tasa de consumo global</span>
+            <span class="progress-pct" [class.danger]="tasaConsumo() >= 90" [class.warn]="tasaConsumo() >= 70 && tasaConsumo() < 90">{{ tasaConsumo() }}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" [style.width.%]="tasaConsumo()" [class.danger]="tasaConsumo() >= 90" [class.warn]="tasaConsumo() >= 70 && tasaConsumo() < 90"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Margen Disponible</span>
+          <div class="metric-icon safe">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="currency-symbol safe">{{ currency.symbol() }}</span>
+          <span class="metric-value safe">{{ formatConvertedNumber(margenDisponible()) }}</span>
+        </div>
+        <div class="metric-foot">
+          <span class="status-pill safe">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            En rango seguro
+          </span>
+        </div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Estado de Alertas</span>
+          <div class="metric-icon" [class.warn]="categoriasEnAlerta() > 0" [class.safe]="categoriasEnAlerta() === 0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value" [class.warn]="categoriasEnAlerta() > 0">{{ categoriasEnAlerta() }}</span>
+          <span class="metric-subtext">categorías</span>
+        </div>
+        <div class="metric-foot">
+          <span class="status-pill" [class.warn]="categoriasEnAlerta() > 0" [class.safe]="categoriasEnAlerta() === 0">
+            {{ categoriasEnAlerta() > 0 ? 'Atención requerida' : 'Todo bajo control' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="toolbar-row">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Filtrar por departamento o categoría..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
+      </div>
+      <div class="toolbar-info">
+        <span>Mostrando {{ budgetItems().length }} presupuestos activos</span>
+      </div>
+    </div>
+
+    <!-- Budget Cards Grid -->
+    <div class="budgets-grid">
+      @for (item of budgetItems(); track item.id) {
+        <div class="budget-card" [class.danger-border]="item.status === 'danger'" [class.warn-border]="item.status === 'warn'">
+          <div class="card-head">
+            <div class="category-meta">
+              <div class="category-icon" [ngClass]="item.status">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  @switch (item.categoria) {
+                    @case ('Marketing') { <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/> }
+                    @case ('Servicios') { <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/> }
+                    @case ('Operaciones') { <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/> }
+                    @case ('I+D') { <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/> }
+                    @case ('Transporte') { <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/> }
+                    @case ('Alimentación') { <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/> }
+                    @default { <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/> }
+                  }
+                </svg>
+              </div>
+              <div>
+                <h3 class="category-name">{{ item.categoria }}</h3>
+                <p class="category-desc">{{ item.descripcion }}</p>
+              </div>
+            </div>
+            <div class="card-head-actions">
+              <span class="status-badge" [ngClass]="item.status">
+                @if (item.status === 'danger') { EXCEDIDO / ALERTA }
+                @else if (item.status === 'warn') { EN REVISIÓN }
+                @else { ÓPTIMO }
+              </span>
+              <button class="btn-icon-action" type="button" (click)="openEdit(item)" title="Editar presupuesto">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
+              <button class="btn-icon-action delete" type="button" (click)="deleteBudget(item.id, item.categoria)" title="Eliminar presupuesto">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Numbers -->
+          <div class="card-numbers">
+            <div class="number-item">
+              <span class="lbl">Gastado</span>
+              <span class="val text-error">{{ formatCurrency(item.gastado) }}</span>
+            </div>
+            <div class="number-item text-right">
+              <span class="lbl">Presupuesto</span>
+              <span class="val">{{ formatCurrency(item.presupuestado) }}</span>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="card-progress">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" [style.width.%]="item.porcentaje" [ngClass]="item.status"></div>
+            </div>
+            <div class="progress-bar-labels">
+              <span>{{ item.porcentaje }}% consumido</span>
+              <span>Disponible: <strong class="text-primary">{{ formatCurrency(item.disponible) }}</strong></span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Modal Nuevo / Editar Presupuesto -->
+    @if (showModal()) {
+      <div class="modal-backdrop" (click)="closeModal()">
+        <div class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div>
+              <div class="eyebrow">ASIGNACIÓN PRESUPUESTARIA</div>
+              <h2 class="modal-title">{{ editingId() ? 'Editar Presupuesto' : 'Configurar Presupuesto' }}</h2>
+            </div>
+            <button class="btn-close" (click)="closeModal()" aria-label="Cerrar modal">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <form (ngSubmit)="saveBudget()" class="modal-body">
+            <div class="form-group">
+              <label for="budgetCategory">Categoría</label>
+              <select id="budgetCategory" [(ngModel)]="form.categoria" name="categoria" [disabled]="!!editingId()" required>
+                @for (cat of categoriasDisponibles(); track cat) {
+                  <option [value]="cat">{{ cat }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="budgetAmount">Límite Mensual Presupuestado ({{ currency.symbol() }} en GTQ base)</label>
+              <input id="budgetAmount" type="number" step="100" min="1" [(ngModel)]="form.presupuestado" name="presupuestado" placeholder="Ej. 15000" required>
+            </div>
+
+            <div class="form-group">
+              <label for="budgetDesc">Descripción u Objetivo de Gasto</label>
+              <input id="budgetDesc" type="text" [(ngModel)]="form.descripcion" name="descripcion" placeholder="Ej. Campañas Q3, optimización de infraestructura...">
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" class="btn secondary" (click)="closeModal()">Cancelar</button>
+              <button type="submit" class="btn primary">{{ editingId() ? 'Actualizar Presupuesto' : 'Guardar Presupuesto' }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+  </main>
+</div>

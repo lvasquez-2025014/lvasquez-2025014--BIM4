@@ -1,4 +1,4 @@
-﻿:host {
+:host {
   display: block;
 }
 
@@ -9,13 +9,13 @@
   display: flex;
   flex-direction: column;
   padding: 16px 14px;
-  background: rgba(17, 17, 19, 0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-right: 1px solid rgba(255, 255, 255, .1);
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border);
   z-index: 50;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, border-color 0.3s ease;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.1);
 }
 
 .sidebar::before {
@@ -44,16 +44,26 @@
 }
 
 .brand-mark {
-  width:44px;
-  height:44px;
+  width: 44px;
+  height: 44px;
   overflow: hidden;
   flex: 0 0 44px;
-  border:1px solid rgba(34,197,94,0.35);
-  border-radius:12px;
-  background: linear-gradient(145deg, #121a15, #0d130f);
+  border: 1px solid var(--border-glow);
+  border-radius: 13px;
+  background: radial-gradient(circle at center, var(--accent-glow), var(--surface-2));
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.05),
-    0 0 16px rgba(16,185,129,0.25);
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 4px 14px rgba(0, 0, 0, 0.5),
+    0 0 16px var(--border-glow);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.brand:hover .brand-mark {
+  transform: scale(1.05);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.2),
+    0 0 22px var(--accent-glow);
+  border-color: var(--border-glow);
 }
 
 .brand-logo {
@@ -61,7 +71,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: center 25%;
+  border-radius: 12px;
 }
 
 .brand-fallback {
@@ -83,31 +94,27 @@
 
 .brand-title {
   color: var(--text);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 850;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  /* Efecto glow: resplandor verde esmeralda sutil alrededor del texto */
+  overflow: visible;
   text-shadow:
-    0 0 6px rgba(16, 185, 129, 0.55),
-    0 0 14px rgba(16, 185, 129, 0.3);
+    0 0 6px var(--accent-glow),
+    0 0 14px var(--border-glow);
 }
 
 .brand-subtitle {
-  margin-top: 4px;
+  margin-top: 3px;
   color: var(--muted);
   font-size: 9px;
   font-weight: 650;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  /* Glow suave del subtítulo */
-  text-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+  overflow: visible;
+  text-shadow: 0 0 8px var(--border-glow);
 }
 
 .section {
@@ -163,7 +170,7 @@
 }
 
 .nav-item.active {
-  background: linear-gradient(90deg, rgba(16,185,129,0.15) 0%, transparent 100%);
+  background: linear-gradient(90deg, var(--accent-glow) 0%, transparent 100%);
   color: var(--accent-strong);
   font-weight: 700;
 }

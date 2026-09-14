@@ -22,22 +22,221 @@
       <input id="global-search" type="search" placeholder="Buscar gasto, categoría o movimiento..."
         [value]="searchQuery()" (input)="onSearch($event)" aria-label="Búsqueda global" />
     </label>
+    <!-- Selector Rápido de Temas Visuales -->
+    <!-- Selector Rápido de Temas Visuales -->
+    <div class="theme-container">
+      <button class="icon-button theme-button" type="button" title="Cambiar tema visual"
+        [attr.aria-label]="'Tema actual: ' + themeService.getCurrentTheme().name"
+        [attr.aria-expanded]="showThemeMenu()"
+        (click)="onThemeButtonClick()">
+        <span class="theme-active-icon">{{ themeService.getCurrentTheme().icon }}</span>
+        <span class="theme-active-dot" [style.background]="themeService.getCurrentTheme().accentHex"></span>
+      </button>
 
-    <button class="icon-button notification-button" type="button" title="Notificaciones"
-      aria-label="Ver notificaciones (2 no leídas)" (click)="onNotificationsClick()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-      </svg>
-      <span class="notification-dot" aria-hidden="true"></span>
-    </button>
+      @if (showThemeMenu()) {
+        <div class="theme-dropdown" (click)="$event.stopPropagation()" role="dialog" aria-label="Selector de Tema">
+          <div class="theme-dropdown-header">
+            <div class="theme-header-left">
+              <span class="theme-header-icon" [style.color]="themeService.getCurrentTheme().accentHex">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
+                  <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+                  <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+                  <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+                  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+                </svg>
+              </span>
+              <div>
+                <div class="theme-title-badge-row">
+                  <h4 class="theme-header-title">Paleta de Temas</h4>
+                  <span class="theme-live-pill">EN VIVO</span>
+                </div>
+                <p class="theme-header-sub">Ambiente cromático global del sistema</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="holographic-line"></div>
+
+          <div class="theme-options-list">
+            @for (t of themeService.getAvailableThemes(); track t.id) {
+              <button type="button" class="theme-item-btn" [class.active]="themeService.activeTheme() === t.id"
+                (click)="selectTheme(t.id)">
+                <div class="theme-swatch-badge" [style.background]="t.bgHex" [style.border-color]="t.accentHex">
+                  <span class="swatch-dot" [style.background]="t.accentHex" [style.box-shadow]="'0 0 8px ' + t.accentHex"></span>
+                </div>
+                <div class="theme-item-info">
+                  <div class="theme-item-name">
+                    <span class="theme-emoji">{{ t.icon }}</span>
+                    <strong>{{ t.name }}</strong>
+                  </div>
+                  <small class="theme-item-tagline" [style.color]="t.accentHex">{{ t.tagline }}</small>
+                  <span class="theme-item-desc">{{ t.description }}</span>
+                </div>
+                @if (themeService.activeTheme() === t.id) {
+                  <span class="theme-check-chip" [style.background]="t.accentHex + '22'" [style.color]="t.accentHex" [style.border-color]="t.accentHex + '55'">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    ACTIVO
+                  </span>
+                }
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="notification-container">
+      <button class="icon-button notification-button" type="button" title="Centro de notificaciones"
+        [attr.aria-label]="'Ver notificaciones (' + unreadCount() + ' no leídas)'"
+        [attr.aria-expanded]="showNotificationsMenu()"
+        [class.has-unread]="unreadCount() > 0"
+        (click)="onNotificationsClick()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        @if (unreadCount() > 0) {
+          <span class="notification-badge">{{ unreadCount() }}</span>
+        }
+      </button>
+
+      @if (showNotificationsMenu()) {
+        <div class="notification-dropdown" (click)="$event.stopPropagation()" role="dialog" aria-label="Centro de Notificaciones">
+          <!-- Header -->
+          <div class="notification-dropdown-header">
+            <div class="notif-header-left">
+              <span class="notif-header-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+              </span>
+              <div>
+                <h4 class="notif-header-title">Notificaciones</h4>
+                <p class="notif-header-sub">
+                  @if (unreadCount() > 0) {
+                    {{ unreadCount() }} {{ unreadCount() === 1 ? 'nueva alerta' : 'nuevas alertas' }}
+                  } @else {
+                    Todo al día
+                  }
+                </p>
+              </div>
+            </div>
+
+            @if (unreadCount() > 0) {
+              <button class="btn-mark-all" type="button" (click)="markAllAsRead()" title="Marcar todas como leídas">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Marcar leídas
+              </button>
+            }
+          </div>
+
+          <div class="holographic-line"></div>
+
+          <!-- Notification Items List -->
+          <div class="notification-list">
+            @if (notifications().length === 0) {
+              <div class="notification-empty">
+                <div class="notif-empty-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    <line x1="2" y1="2" x2="22" y2="22"/>
+                  </svg>
+                </div>
+                <p class="notif-empty-title">Bandeja al día</p>
+                <span class="notif-empty-desc">No hay alertas ni avisos pendientes en el sistema.</span>
+              </div>
+            } @else {
+              @for (item of notifications(); track item.id) {
+                <div class="notification-item" [ngClass]="item.type" [class.unread]="!item.read" (click)="onNotificationItemClick(item)">
+                  <div class="notif-item-left">
+                    <div class="notif-type-icon" [ngClass]="item.type">
+                      @if (item.type === 'error') {
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                      } @else if (item.type === 'warning') {
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                      } @else if (item.type === 'success') {
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                      } @else {
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="notif-item-body">
+                    <div class="notif-item-header">
+                      <strong class="notif-item-title">{{ item.title }}</strong>
+                      <span class="notif-item-time">{{ item.time }}</span>
+                    </div>
+                    <p class="notif-item-msg">{{ item.message }}</p>
+
+                    @if (item.actionText) {
+                      <div class="notif-item-actions">
+                        <span class="notif-action-badge">
+                          {{ item.actionText }}
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"/>
+                          </svg>
+                        </span>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="notif-item-right">
+                    @if (!item.read) {
+                      <span class="notif-unread-dot" title="No leído"></span>
+                    }
+                    <button class="notif-dismiss-btn" type="button" title="Descartar notificación" (click)="removeNotification($event, item.id)">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          <div class="holographic-line"></div>
+
+          <!-- Footer with shortcuts -->
+          <div class="notification-dropdown-footer">
+            <button type="button" class="btn-notif-shortcut" (click)="navigateTo('/presupuestos')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              Presupuestos
+            </button>
+            <button type="button" class="btn-notif-shortcut" (click)="navigateTo('/movimientos')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              Movimientos
+            </button>
+          </div>
+        </div>
+      }
+    </div>
 
     <div class="profile-container">
       <button class="profile-mini" type="button" title="Perfil" aria-label="Ver opciones de perfil"
         (click)="onProfileClick()" [attr.aria-expanded]="showProfileMenu()" [attr.aria-haspopup]="true">
         @if (userPhoto()) {
-        <img [src]="userPhoto()" [alt]="userName()" class="profile-mini-img" referrerpolicy="no-referrer"
-          crossorigin="anonymous" (error)="userPhoto.set(null)" />
+        <img [src]="userPhoto()" [alt]="userName()" class="profile-mini-img" referrerpolicy="no-referrer" (error)="onPhotoError()" />
         } @else {
         <span>{{ userInitials() }}</span>
         }
@@ -48,15 +247,14 @@
         <div class="profile-summary">
           <button class="profile-menu-avatar" type="button" [disabled]="!userPhoto()" (click)="openPhotoPreview($event)" [attr.aria-label]="userPhoto() ? 'Ampliar foto de perfil' : 'Sin foto de perfil'">
             @if (userPhoto()) {
-            <img [src]="userPhoto()" [alt]="userName()" referrerpolicy="no-referrer" crossorigin="anonymous"
-              (error)="userPhoto.set(null)" />
+            <img [src]="userPhoto()" [alt]="userName()" referrerpolicy="no-referrer" (error)="onPhotoError()" />
             } @else {
-            {{ userInitials() }}
+            <span class="avatar-initials">{{ userInitials() }}</span>
             }
           </button>
           <div class="profile-identity">
-            <strong>{{ userName() || 'Administrador' }}</strong>
-            <span>Administrador</span>
+            <strong>{{ userName() || 'Usuario' }}</strong>
+            <span>{{ userRole() }}</span>
           </div>
         </div>
         <div class="holographic-line"></div>
@@ -72,21 +270,60 @@
 
 @if (showPhotoPreview() && userPhoto()) {
   <div class="photo-preview-backdrop" (click)="closePhotoPreview()" role="presentation">
-    <section class="photo-preview" role="dialog" aria-modal="true" aria-label="Foto de perfil ampliada" (click)="$event.stopPropagation()">
+    <section class="photo-preview" role="dialog" aria-modal="true" aria-label="Perfil de usuario" (click)="$event.stopPropagation()">
       <div class="photo-preview-orb photo-preview-orb-one" aria-hidden="true"></div>
       <div class="photo-preview-orb photo-preview-orb-two" aria-hidden="true"></div>
+      
       <header class="photo-preview-header">
-        <div class="photo-preview-brand"><div><strong>Vought International</strong><small>Perfil de usuario</small></div></div>
+        <div class="photo-preview-brand">
+          <span class="vought-badge-icon">V</span>
+          <div>
+            <strong>Vought International</strong>
+            <small>Credencial de Usuario</small>
+          </div>
+        </div>
+        <button class="photo-preview-close" type="button" (click)="closePhotoPreview()" aria-label="Cerrar perfil">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </header>
-      <button class="photo-preview-close" type="button" (click)="closePhotoPreview()" aria-label="Cerrar vista ampliada">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-      <div class="photo-preview-stage">
-        <img [src]="userPhoto()" [alt]="'Foto de perfil de ' + userName()" referrerpolicy="no-referrer" crossorigin="anonymous" (error)="closePhotoPreview()">
+
+      <!-- Center Avatar Hero with Cyber Ring -->
+      <div class="photo-preview-avatar-wrap">
+        <div class="photo-preview-ring">
+          <img [src]="userPhoto()" [alt]="'Foto de perfil de ' + userName()" class="photo-preview-img" referrerpolicy="no-referrer" crossorigin="anonymous" (error)="closePhotoPreview()">
+        </div>
+        <span class="photo-status-badge" aria-label="Estado activo">
+          <i class="status-pulse"></i> Activo
+        </span>
       </div>
-      <footer class="photo-preview-footer">
-        <div class="photo-preview-identity"><strong>{{ userName() }}</strong><span><i aria-hidden="true"></i>Cuenta activa</span></div>
-        <span class="photo-preview-tag">Vought ID</span>
+
+      <!-- User Identity & Title -->
+      <div class="photo-preview-bio">
+        <h3 class="photo-user-name">{{ userName() }}</h3>
+        <p class="photo-user-role">{{ isAdmin() ? 'Administrador del Sistema' : 'Cliente Corporativo' }}</p>
+      </div>
+
+      <!-- Specs / Dossier Details Grid -->
+      <div class="photo-preview-grid">
+        <div class="photo-grid-item">
+          <span class="grid-label">ID Vought</span>
+          <span class="grid-value">#VGT-{{ (userName() || 'USR').toUpperCase() }}</span>
+        </div>
+        <div class="photo-grid-item">
+          <span class="grid-label">Rol</span>
+          <span class="grid-value verified">{{ userRole() }}</span>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <footer class="photo-preview-actions">
+        <button type="button" class="btn-preview-secondary" (click)="closePhotoPreview()">
+          Volver
+        </button>
+        <button type="button" class="btn-preview-logout" (click)="onLogout($event); closePhotoPreview()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Cerrar Sesión
+        </button>
       </footer>
     </section>
   </div>
