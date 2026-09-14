@@ -9,37 +9,37 @@
 
 ---
 
-## 📌 Descripción del Proyecto
+## Descripción del Proyecto
 
-**Vought Finance Control** es una plataforma integral de gestión de finanzas personales y empresariales desarrollada bajo una arquitectura modular y desacoplada. Integra autenticación robusta mediante tokens JWT y Google Sign-In, control de acceso basado en roles (**RBAC**), validaciones financieras en tiempo real y una interfaz gráfica de alta fidelidad inspirada en la estética corporativa de *Vought International*.
+Vought Finance Control es una plataforma integral de gestión de finanzas personales y empresariales desarrollada bajo una arquitectura modular y desacoplada. Integra autenticación mediante tokens JWT y Google Sign-In, control de acceso basado en roles (RBAC), validaciones financieras en tiempo real y una interfaz gráfica inspirada en la estética corporativa de Vought International.
 
 ---
 
-## 🚀 Características Principales
+## Características Principales
 
-### 1. 🛡️ Autenticación y Seguridad (RBAC)
-- **Autenticación Dual:** Registro e inicio de sesión local mediante contraseñas cifradas con `scrypt` y soporte de inicio de sesión con **Google OAuth 2.0** con fallback resiliente contra desfases horarios.
+### 1. Autenticación y Seguridad (RBAC)
+- **Autenticación Dual:** Registro e inicio de sesión local mediante contraseñas cifradas con `scrypt` y soporte de inicio de sesión con Google OAuth 2.0 con validación resiliente de tokens.
 - **Control de Acceso Basado en Roles:** 
   - `admin`: Gestión total de usuarios, roles, contraseñas, auditoría y parametrización.
   - `user`: Gestión personal de gastos, ingresos, presupuestos y categorías con aislamiento estricto de datos.
-- **Guards de Seguridad:** `JwtAuthGuard` y `RolesGuard` protegiendo endpoints sensibles en NestJS y rutas en Angular mediante `AuthGuard` y `AdminGuard`.
-- **Gestión de Sesión:** Notificaciones de inactividad, conteo regresivo y renovación silenciosa (`refresh token`).
+- **Guards de Seguridad:** `JwtAuthGuard` y `RolesGuard` protegiendo endpoints sensibles en NestJS, y `AuthGuard` junto a `AdminGuard` asegurando rutas en Angular.
+- **Gestión de Sesión:** Notificaciones de inactividad, conteo regresivo y renovación silenciosa de token (`refresh token`).
 
-### 2. 💼 Reglas de Negocio Financieras
-- **Control de Saldo Disponible:** Validación reactiva que impide registrar gastos si el monto supera el saldo disponible acumulado en ingresos.
-- **Restricción de Fechas Futuras:** Bloqueo de transacciones con fechas posteriores a la fecha actual.
-- **Conversor Multidivisa en Tiempo Real:** Visualización instantánea de importes en Quetzales (GTQ), Dólares Estadounidenses (USD) y Euros (EUR).
+### 2. Reglas de Negocio Financieras
+- **Control de Saldo Disponible:** Validación que impide registrar gastos si el importe supera el saldo disponible acumulado en ingresos.
+- **Restricción de Fechas Futuras:** Bloqueo automático de transacciones con fechas posteriores a la fecha actual del sistema.
+- **Conversor Multidivisa en Tiempo Real:** Visualización y cálculo dinámico en Quetzales (GTQ), Dólares Estadounidenses (USD) y Euros (EUR).
 - **Gestión de Presupuestos:** Asignación mensual por categoría con indicadores de porcentaje consumido y alertas de sobregiro.
 
-### 3. 🎨 Experiencia Visual y Diseño
-- **Sistema Multitema:** Soporte para temas corporativos dinámicos (*Vought Dark*, *Emerald*, *Cyberpunk*, *Sapphire*).
+### 3. Experiencia Visual y Diseño
+- **Sistema Multitema:** Soporte para temas corporativos dinámicos (Vought Dark, Emerald, Cyberpunk, Sapphire).
 - **Cursor Personalizado:** Puntero vectorial dinámico SVG integrado en toda la navegación.
 - **Dashboard Analítico:** Gráficos vectoriales SVG reactivos (gráfico de velas OHLC, líneas de tendencia temporal y gráfico de dona por distribución de categoría).
-- **Exportación de Datos:** Descarga de reportes de movimientos en formatos CSV estructurados con codificación `UTF-8 BOM`.
+- **Exportación de Datos:** Descarga de reportes de movimientos en formatos CSV estructurados con codificación UTF-8 BOM.
 
 ---
 
-## 📂 Estructura del Repositorio
+## Estructura del Repositorio
 
 ```bash
 ├── backend/                  # API REST construida con NestJS 12 y TypeScript
@@ -69,7 +69,7 @@
 │   │   │       └── components/ # Topbar, Sidebar, Gráficos SVG (Velas, Dona, Líneas)
 │   │   └── shared/           # Componentes flotantes (Toasts, Notificaciones)
 │
-├── docs/                     # Documentación y preparación para defensa de proyecto
+├── docs/                     # Documentación técnica y preparación de defensa
 │   ├── EXPLICACION_LINEA_POR_LINEA.md # Guía técnica detallada de todo el código
 │   ├── GUIA_DE_ESTUDIO_DEFENSA.md     # Guía didáctica para evaluación y preguntas
 │   └── diagramas/            # Diagramas interactivos en HTML y JSON
@@ -77,7 +77,7 @@
 │       ├── flujo-seguridad.html       # Flujo JWT y verificación de permisos
 │       └── arquitectura-vought.html   # Arquitectura general del sistema
 │
-├── maquetados/               # Documentos de especificación y maquetación de pantallas (.docx y .pdf)
+├── maquetados/               # Documentos de especificación y maquetación (.docx y .pdf)
 └── scriptsPowerShell/        # Scripts de automatización y administración de usuarios
     ├── Crear-Usuario-Admin.ps1
     ├── Crear-Usuario-Cliente.ps1
@@ -88,7 +88,7 @@
 
 ---
 
-## 🛠️ Instalación y Puesta en Marcha
+## Instalación y Puesta en Marcha
 
 ### Prerrequisitos
 - **Node.js:** Versión 20 o superior
@@ -142,9 +142,9 @@
 
 ---
 
-## ⚙️ Administración de Usuarios (PowerShell)
+## Administración de Usuarios (PowerShell)
 
-Para facilitar la administración de usuarios sin necesidad de quemar credenciales en el código fuente, se crearon scripts dedicados en la carpeta `scriptsPowerShell/`:
+Para facilitar la administración de usuarios sin requerir credenciales fijas en el código fuente, se incluyen scripts dedicados en la carpeta `scriptsPowerShell/`:
 
 ```powershell
 # Listar todos los usuarios y sus roles
@@ -165,17 +165,17 @@ Para facilitar la administración de usuarios sin necesidad de quemar credencial
 
 ---
 
-## 📊 Documentación de Arquitectura y Diagramas
+## Documentación de Arquitectura y Diagramas
 
-Dentro de la carpeta [`docs/diagramas/`](file:///docs/diagramas/) se encuentran disponibles diagramas interactivos que pueden abrirse directamente en cualquier navegador:
+Dentro de la carpeta [`docs/diagramas/`](file:///docs/diagramas/) se encuentran diagramas interactivos que pueden abrirse en cualquier navegador:
 
-- **`ciclo-vida-nestjs.html`:** Muestra la traza exacta de una petición atravesando Middleware ➔ Guards ➔ Interceptors ➔ Pipes ➔ Controller ➔ Service ➔ MongoDB.
+- **`ciclo-vida-nestjs.html`:** Traza de una petición a través de Middleware -> Guards -> Interceptors -> Pipes -> Controller -> Service -> MongoDB.
 - **`flujo-seguridad.html`:** Flujo criptográfico de tokens JWT, almacenamiento seguro y resolución de roles.
 - **`arquitectura-vought.html`:** Topología general entre el cliente Angular, el backend NestJS y la persistencia NoSQL.
 
 ---
 
-## 👨‍💻 Datos del Alumno
+## Datos del Alumno
 
 * **Nombre:** Ludwing Iván Vásquez Navas
 * **Carné:** 2025014
