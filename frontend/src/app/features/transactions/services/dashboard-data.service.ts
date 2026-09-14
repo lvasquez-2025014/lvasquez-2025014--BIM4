@@ -1,6 +1,9 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { TransactionService } from './transaction.service';
+import { CurrencyService } from '../../../core/services/currency.service';
+
+import { parseLocalDate, getLocalTodayString, formatDisplayDate, toLocalDateInputString } from '../../../core/utils/date.utils';
 
 export type Period = 'day' | 'week' | 'month' | 'year';
 
@@ -31,6 +34,7 @@ export const EXPENSE_CATEGORIES = [
 @Injectable({ providedIn: 'root' })
 export class DashboardDataService {
   private transactions = inject(TransactionService);
+  readonly currency = inject(CurrencyService);
 
   private readonly _currentPeriod = signal<Period>('month');
   private readonly _expenses = signal<Expense[]>([]);
@@ -50,35 +54,81 @@ export class DashboardDataService {
     }
   }
 
-  private parseDateLocal(dateInput: string | Date): Date {
-    if (dateInput instanceof Date) return dateInput;
-    if (!dateInput) return new Date();
-    const datePart = dateInput.includes('T') ? dateInput.split('T')[0] : dateInput;
-    const parts = datePart.split('-');
-    if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
-      return new Date(year, month, day);
+  parseDateLocal(dateInput: string | Date): Date {
+    return parseLocalDate(dateInput);
+  }
+
+  getPeriodLabels(period: Period): string[] {
+    const now = new Date();
+    if (period === 'day') {
+      return ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'];
     }
-    return new Date(dateInput);
+    if (period === 'week') {
+      // Últimos 7 días móviles hasta hoy para no perder el día de ayer ni proyectar el futuro
+      const labels: string[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 12, 0, 0);
+        const dayName = d.toLocaleDateString('es-GT', { weekday: 'short' });
+        const cap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+        labels.push(i === 0 ? `Hoy ${d.getDate()}` : `${cap} ${d.getDate()}`);
+      }
+      return labels;
+    }
+    if (period === 'month') {
+      const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const mName = monthNames[now.getMonth()];
+      const currentDay = now.getDate();
+
+      // Encontrar el día máximo con movimientos en este mes (si hubiese futuros programados)
+      const thisMonthExpenses = this._expenses().filter(e => {
+        const d = parseLocalDate(e.fecha);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      });
+
+      let maxDay = currentDay;
+      thisMonthExpenses.forEach(e => {
+        const d = parseLocalDate(e.fecha);
+        if (d.getDate() > maxDay) maxDay = d.getDate();
+      });
+
+      // Mínimo 2 días para trazar en SVG, hasta el día actual o última transacción registrada
+      maxDay = Math.min(Math.max(maxDay, 2), new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate());
+
+      const labels: string[] = [];
+      for (let d = 1; d <= maxDay; d++) {
+        labels.push(d === currentDay ? `${d} ${mName} (Hoy)` : `${d} ${mName}`);
+      }
+      return labels;
+    }
+    // Año: meses transcurridos hasta el mes actual
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const currentMonth = now.getMonth();
+    return monthNames.slice(0, Math.max(currentMonth + 1, 6));
   }
 
   private filterByPeriod(expenses: Expense[], period: Period): Expense[] {
     const now = new Date();
-    const endOfToday = new Date(now);
-    endOfToday.setHours(23, 59, 59, 999);
     return expenses.filter(e => {
-      const d = this.parseDateLocal(e.fecha);
-      if (period === 'day') return d.toDateString() === now.toDateString() && d <= endOfToday;
-      if (period === 'week') {
-        const start = new Date(now);
-        start.setDate(start.getDate() - start.getDay() + 1);
-        start.setHours(0, 0, 0, 0);
-        return d >= start && d <= endOfToday;
+      const d = parseLocalDate(e.fecha);
+      if (Number.isNaN(d.getTime())) return false;
+
+      if (period === 'day') {
+        return d.getFullYear() === now.getFullYear() &&
+               d.getMonth() === now.getMonth() &&
+               d.getDate() === now.getDate();
       }
-      if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && d <= endOfToday;
-      if (period === 'year') return d.getFullYear() === now.getFullYear() && d <= endOfToday;
+      if (period === 'week') {
+        // Últimos 7 días completos
+        const startOfRollingWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
+        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        return d >= startOfRollingWeek && d <= endOfToday;
+      }
+      if (period === 'month') {
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }
+      if (period === 'year') {
+        return d.getFullYear() === now.getFullYear();
+      }
       return true;
     });
   }
@@ -117,115 +167,68 @@ export class DashboardDataService {
     };
   });
 
-  readonly chartLabels = computed(() => {
-    const p = this._currentPeriod();
-    if (p === 'day') {
-      return ['0–3 h', '4–7 h', '8–11 h', '12–15 h', '16–19 h', '20–23 h'];
-    }
-    if (p === 'week') return ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-    if (p === 'month') return ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5'];
-    return ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  });
+  readonly chartLabels = computed(() => this.getPeriodLabels(this._currentPeriod()));
 
-  // Datos reales: agrupar gastos/ingresos por período para línea de ahorro
+  // Datos reales: agrupar gastos/ingresos por período para línea de ahorro acumulado
   readonly savingsData = computed(() => {
-    const labels = this.chartLabels();
-    const exps = this.filteredExpenses();
-    if (!exps.length) return labels.map(() => 0);
-
-    const buckets = labels.map(() => 0);
-    const p = this._currentPeriod();
-
-    exps.forEach(e => {
-      const sign = e.tipo === 'Ingreso' ? 1 : -1;
-      const d = this.parseDateLocal(e.fecha);
-      let idx = 0;
-
-      if (p === 'day') {
-        // Agrupar solamente en intervalos horarios que ya han comenzado.
-        const hour = d.getHours();
-        idx = Math.min(Math.floor(hour / 4), labels.length - 1);
-      } else if (p === 'week') {
-        // Agrupar por día de la semana (Lun-Dom)
-        idx = (d.getDay() + 6) % 7; // Lunes=0, Domingo=6
-      } else if (p === 'month') {
-        // Agrupar por semana del mes
-        const dayOfMonth = d.getDate();
-        idx = Math.min(Math.floor((dayOfMonth - 1) / 7), 4);
-      } else if (p === 'year') {
-        // Agrupar por mes
-        idx = d.getMonth();
-      }
-
-      if (idx >= 0 && idx < buckets.length) {
-        buckets[idx] += e.monto * sign;
-      }
-    });
-
-    // Acumulado
+    const flow = this.generateCashFlowData(this._currentPeriod());
     let acc = 0;
-    return buckets.map(b => { acc += b; return acc; });
+    return flow.net.map(b => {
+      acc += b;
+      return acc;
+    });
   });
 
-  // Saldo disponible: parte del saldo real al inicio del período y después
-  // incorpora cada movimiento. No debe duplicar la gráfica de ahorro.
+  // Saldo disponible: parte del saldo real previo al período y acumula cada movimiento
   readonly remainingData = computed(() => {
-    const labels = this.chartLabels();
-    const exps = this.filteredExpenses();
-    const buckets = labels.map(() => 0);
     const p = this._currentPeriod();
-
-    exps.forEach(e => {
-      const sign = e.tipo === 'Ingreso' ? 1 : -1;
-      const d = this.parseDateLocal(e.fecha);
-      let idx = 0;
-
-      if (p === 'day') {
-        // Agrupar solamente en intervalos horarios que ya han comenzado.
-        const hour = d.getHours();
-        idx = Math.min(Math.floor(hour / 4), labels.length - 1);
-      } else if (p === 'week') {
-        // Agrupar por día de la semana (Lun-Dom)
-        idx = (d.getDay() + 6) % 7; // Lunes=0, Domingo=6
-      } else if (p === 'month') {
-        // Agrupar por semana del mes
-        const dayOfMonth = d.getDate();
-        idx = Math.min(Math.floor((dayOfMonth - 1) / 7), 4);
-      } else if (p === 'year') {
-        // Agrupar por mes
-        idx = d.getMonth();
-      }
-
-      if (idx >= 0 && idx < buckets.length) {
-        buckets[idx] += e.monto * sign;
-      }
-    });
-
+    const flow = this.generateCashFlowData(p);
     const periodStart = this.getPeriodStart(p);
-    let acc = this._expenses()
-      .filter(e => this.parseDateLocal(e.fecha) < periodStart)
-      .reduce((balance, e) => balance + (e.tipo === 'Ingreso' ? e.monto : -e.monto), 0);
-    return buckets.map(b => { acc += b; return acc; });
+
+    const initialBalance = this._expenses()
+      .filter(e => {
+        const d = parseLocalDate(e.fecha);
+        return !Number.isNaN(d.getTime()) && d < periodStart;
+      })
+      .reduce((balance, e) => balance + (e.tipo === 'Ingreso' ? Number(e.monto) || 0 : -(Number(e.monto) || 0)), 0);
+
+    let acc = initialBalance;
+    return flow.net.map(b => {
+      acc += b;
+      return acc;
+    });
   });
 
   private getPeriodStart(period: Period): Date {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    if (period === 'week') start.setDate(start.getDate() - start.getDay() + 1);
-    if (period === 'month') start.setDate(1);
-    if (period === 'year') start.setMonth(0, 1);
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    if (period === 'day') {
+      return start;
+    }
+    if (period === 'week') {
+      start.setDate(start.getDate() - 6);
+      return start;
+    }
+    if (period === 'month') {
+      start.setDate(1);
+      return start;
+    }
+    if (period === 'year') {
+      start.setMonth(0, 1);
+      return start;
+    }
     return start;
   }
 
   readonly activities = computed((): ActivityItem[] => {
     return this._expenses()
-      .sort((a, b) => this.parseDateLocal(b.fecha).getTime() - this.parseDateLocal(a.fecha).getTime())
+      .sort((a, b) => parseLocalDate(b.fecha).getTime() - parseLocalDate(a.fecha).getTime())
       .slice(0, 5)
       .map(e => ({
         icon: e.categoria.charAt(0).toUpperCase() || 'E',
         name: e.descripcion,
         category: e.categoria,
-        date: this.parseDateLocal(e.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+        date: formatDisplayDate(e.fecha),
         amount: e.monto,
         type: e.tipo === 'Ingreso' ? 'income' : 'expense'
       }));
@@ -257,11 +260,11 @@ export class DashboardDataService {
   ]);
 
   formatCurrency(value: number): string {
-    return 'Q ' + value.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return this.currency.format(value);
   }
 
   formatCurrencyShort(value: number): string {
-    return 'Q ' + value.toLocaleString('es-GT');
+    return this.currency.formatShort(value);
   }
 
   getTrendClass(current: number, previous: number): 'positive' | 'negative' | 'accent' {
@@ -271,53 +274,55 @@ export class DashboardDataService {
   }
 
   /**
-   * Agrupa movimientos reales para el gráfico principal. Los rangos son móviles
-   * para que "Mes" y "Año" siempre tengan una escala completa, incluso al
-   * principio de un mes o de un año.
+   * Agrupa movimientos reales para el gráfico de flujo de efectivo.
+   * Las escalas se adaptan fielmente a la vista cartesiana de cada período:
+   * - Hoy: intervalos de 4 horas en el día
+   * - Semana: 7 días móviles hasta hoy (Ayer y Hoy siempre contiguos y visibles)
+   * - Mes: Días del mes en curso hasta el día actual
+   * - Año: Meses del año en curso hasta el mes actual
    */
   generateCashFlowData(period: Period): CashFlowData {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dates: Date[] = [];
-    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const now = new Date();
+    const labels = this.getPeriodLabels(period);
+    const income = labels.map(() => 0);
+    const expense = labels.map(() => 0);
 
-    if (period === 'year') {
-      for (let i = 11; i >= 0; i--) dates.push(new Date(today.getFullYear(), today.getMonth() - i, 1));
-    } else {
-      const days = period === 'day' ? 1 : period === 'week' ? 7 : 30;
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        dates.push(date);
-      }
-    }
+    const filtered = this.filterByPeriod(this._expenses(), period);
 
-    const keyForDay = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-    const keyForMonth = (date: Date) => `${date.getFullYear()}-${date.getMonth()}`;
-    const buckets = new Map<string, { income: number; expense: number }>();
-    const byDay = period !== 'year';
-
-    this._expenses().forEach(movement => {
-      const date = this.parseDateLocal(movement.fecha);
+    filtered.forEach(movement => {
+      const date = parseLocalDate(movement.fecha);
       if (Number.isNaN(date.getTime())) return;
-      const key = byDay ? keyForDay(date) : keyForMonth(date);
-      const bucket = buckets.get(key) || { income: 0, expense: 0 };
-      if (movement.tipo === 'Ingreso') bucket.income += Number(movement.monto) || 0;
-      else bucket.expense += Number(movement.monto) || 0;
-      buckets.set(key, bucket);
+      let idx = -1;
+
+      if (period === 'day') {
+        const hour = date.getHours();
+        idx = Math.min(Math.floor(hour / 4), labels.length - 1);
+      } else if (period === 'week') {
+        const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+        const dateMid = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+        const diffDays = Math.round((todayMid.getTime() - dateMid.getTime()) / (1000 * 60 * 60 * 24));
+        idx = 6 - diffDays;
+      } else if (period === 'month') {
+        idx = date.getDate() - 1; // Día 1 = 0, ..., días del mes
+      } else if (period === 'year') {
+        idx = date.getMonth(); // 0 = Ene, ..., 11 = Dic
+      }
+
+      if (idx >= 0 && idx < labels.length) {
+        const amt = Number(movement.monto) || 0;
+        if (movement.tipo === 'Ingreso') {
+          income[idx] += amt;
+        } else {
+          expense[idx] += amt;
+        }
+      }
     });
 
-    const income: number[] = [];
-    const expense: number[] = [];
-    const labels: string[] = [];
-    dates.forEach(date => {
-      const bucketKey = byDay ? keyForDay(date) : keyForMonth(date);
-      const bucket = buckets.get(bucketKey) || { income: 0, expense: 0 };
-      income.push(bucket.income);
-      expense.push(bucket.expense);
-      labels.push(byDay ? (period === 'day' ? 'Hoy' : `${date.getDate()} ${monthNames[date.getMonth()]}`) : monthNames[date.getMonth()]);
-    });
-
-    return { labels, income, expense, net: income.map((value, index) => value - expense[index]) };
+    return {
+      labels,
+      income,
+      expense,
+      net: income.map((val, i) => val - expense[i])
+    };
   }
 }

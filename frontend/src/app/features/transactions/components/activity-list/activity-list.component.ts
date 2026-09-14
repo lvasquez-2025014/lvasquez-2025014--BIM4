@@ -1,5 +1,6 @@
-import { Component, input, computed } from '@angular/core';
+import { Component, input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyService } from '../../../../core/services/currency.service';
 
 export interface ActivityItem {
   icon: string;
@@ -18,10 +19,12 @@ export interface ActivityItem {
   styleUrl: './activity-list.component.css'
 })
 export class ActivityListComponent {
+  private currency = inject(CurrencyService);
+
   activities = input.required<ActivityItem[]>();
   ariaLabel = input('Actividad reciente');
 
   formatCurrency(value: number): string {
-    return 'Q ' + value.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return this.currency.format(value);
   }
 }

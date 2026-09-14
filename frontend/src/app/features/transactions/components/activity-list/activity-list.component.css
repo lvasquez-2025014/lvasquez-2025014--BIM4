@@ -42,8 +42,8 @@
 }
 
 .activity-icon.income {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.2);
+  background: var(--accent-glow);
+  border-color: var(--border-glow);
   color: var(--accent);
 }
 

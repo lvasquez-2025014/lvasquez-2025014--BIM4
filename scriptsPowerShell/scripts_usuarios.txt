@@ -1,0 +1,91 @@
+================================================================================
+  VOUGHT SECURITY // SISTEMA DE GESTIÓN DIRECTA DE USUARIOS Y ROLES
+================================================================================
+Proyecto: Control de Gastos Corporativo (NestJS + MongoDB + Angular 18)
+Descripción: Guía completa y comandos para crear, promover, modificar contraseñas
+y listar usuarios administradores y clientes.
+
+NOTA IMPORTANTE:
+Los scripts de PowerShell ahora interactúan DIRECTAMENTE con MongoDB mediante
+la función criptográfica scrypt idéntica a la del backend. Esto significa:
+- FUNCIONA AÚN CON LA BASE DE DATOS TOTALMENTE VACÍA (sin usuarios previos).
+- No requiere autenticación previa ni tokens de administrador para registrar el primer admin.
+- No hay credenciales hardcodeadas en el código fuente.
+- Puede ejecutarse desde cualquier consola de PowerShell.
+
+================================================================================
+[1] CÓMO EJECUTAR LOS SCRIPTS .PS1 INTERACTIVOS (DOBLE CLIC O POWERSHELL)
+================================================================================
+Puedes hacer clic derecho y "Ejecutar con PowerShell" sobre cualquiera de los 
+archivos en la carpeta "scriptsPowerShell":
+
+1. Crear-Usuario-Admin.ps1
+   -> Pide usuario, nombre completo y contraseña.
+   -> Lo registra en MongoDB con rol 'admin' (Acceso Total y gestión de usuarios).
+
+2. Crear-Usuario-Cliente.ps1
+   -> Pide usuario, nombre completo y contraseña.
+   -> Lo registra en MongoDB con rol 'user' (Uso normal de la app, sin panel admin).
+
+3. Promover-Usuario-A-Admin.ps1
+   -> Pide el nombre de usuario o correo de Google (ej: tu_correo@gmail.com).
+   -> Le asigna el rol 'admin' en MongoDB. Al iniciar sesión con Google o clave, 
+      tendrá acceso completo como administrador.
+
+4. Cambiar-Password-Admin.ps1
+   -> Pide el nombre de usuario y la nueva contraseña.
+   -> Actualiza el hash criptográfico en MongoDB al instante.
+
+5. Listar-Usuarios.ps1
+   -> Muestra en una tabla clara todos los usuarios, sus roles y fechas de creación.
+
+
+================================================================================
+[2] COMANDOS RÁPIDOS DIRECTOS (COPIAR Y PEGAR EN CUALQUIER CONSOLA POWERSHELL)
+================================================================================
+Puedes abrir cualquier ventana de PowerShell (incluso como Administrador en C:\WINDOWS\system32)
+y copiar/pegar directamente estos comandos:
+
+--- A) CREAR UN NUEVO ADMINISTRADOR: ---
+& node "c:\Users\asm\Desktop\lvasquez-2025014--BIM4\scriptsPowerShell\manage_user.cjs" create admin admin123 "Administrador Principal" admin
+
+--- B) CREAR UN CLIENTE REGULAR: ---
+& node "c:\Users\asm\Desktop\lvasquez-2025014--BIM4\scriptsPowerShell\manage_user.cjs" create cliente1 clave123 "Juan Pérez" user
+
+--- C) PROMOVER TU CUENTA DE GOOGLE A ADMINISTRADOR: ---
+& node "c:\Users\asm\Desktop\lvasquez-2025014--BIM4\scriptsPowerShell\manage_user.cjs" promote "tu_correo@gmail.com"
+
+--- D) CAMBIAR LA CONTRASEÑA DE CUALQUIER USUARIO: ---
+& node "c:\Users\asm\Desktop\lvasquez-2025014--BIM4\scriptsPowerShell\manage_user.cjs" change-password admin "nueva_clave_segura_2026"
+
+--- E) VER TODOS LOS USUARIOS Y SUS ROLES: ---
+& node "c:\Users\asm\Desktop\lvasquez-2025014--BIM4\scriptsPowerShell\manage_user.cjs" list
+
+
+================================================================================
+[3] FUNCIONES POWERSHELL EN SESIÓN (OPCIONAL)
+================================================================================
+Si prefieres funciones con nombres en tu consola, copia y pega esto:
+
+$Runner = "c:\Users\asm\Desktop\lvasquez-2025014--BIM4\scriptsPowerShell\manage_user.cjs"
+
+function Nuevo-Admin ($Usuario, $Password, $Nombre = $Usuario) {
+    & node $Runner create $Usuario $Password $Nombre admin
+}
+
+function Nuevo-Cliente ($Usuario, $Password, $Nombre = $Usuario) {
+    & node $Runner create $Usuario $Password $Nombre user
+}
+
+function Promover-Admin ($Identificador) {
+    & node $Runner promote $Identificador
+}
+
+function Listar-Todos-Usuarios {
+    (& node $Runner list | ConvertFrom-Json).users | Format-Table id, usuario, nombre, rol, createdAt -AutoSize
+}
+
+# Ejemplos:
+# Nuevo-Admin "admin_seguridad" "clave123" "Admin Seguridad"
+# Promover-Admin "ludwingivanvasqueznavas@gmail.com"
+# Listar-Todos-Usuarios

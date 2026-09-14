@@ -57,6 +57,9 @@ importers:
       '@angular/compiler-cli':
         specifier: ^18.0.0
         version: 18.2.14(@angular/compiler@18.2.14(@angular/core@18.2.14(rxjs@7.8.2)(zone.js@0.14.10)))(supports-color@8.1.1)(typescript@5.4.5)
+      '@esbuild/win32-x64':
+        specifier: 0.23.0
+        version: 0.23.0
       typescript:
         specifier: ~5.4.0
         version: 5.4.5
@@ -5134,8 +5137,7 @@ snapshots:
   '@esbuild/win32-x64@0.21.5':
     optional: true
 
-  '@esbuild/win32-x64@0.23.0':
-    optional: true
+  '@esbuild/win32-x64@0.23.0': {}
 
   '@inquirer/checkbox@2.5.0':
     dependencies:

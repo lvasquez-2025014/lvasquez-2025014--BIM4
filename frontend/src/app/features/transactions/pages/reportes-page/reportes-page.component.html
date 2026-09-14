@@ -1,0 +1,208 @@
+<app-sidebar #sidebar></app-sidebar>
+
+<div class="layout">
+  <app-topbar (menuToggle)="sidebar.openMobileMenu()"></app-topbar>
+
+  <main class="main-content" role="main">
+    <div class="ambient-glow" aria-hidden="true"></div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="eyebrow">
+          <span class="beacon"></span>
+          <span>INTELIGENCIA Y REPORTES // AUDITORÍA ALGORÍTMICA</span>
+        </div>
+        <h1 class="page-title">Reportes Financieros</h1>
+        <p class="page-subtitle">
+          Visualiza métricas avanzadas, comparativas intermensuales y proyecciones de gasto corporativo con auditoría continua.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn secondary" (click)="exportCSV()" type="button" id="btn-export-reporte">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Exportar CSV / Excel
+        </button>
+        <button class="btn primary" (click)="downloadPDF()" type="button" id="btn-descargar-reporte">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar Informe Ejecutivo (PDF)
+        </button>
+      </div>
+    </div>
+
+    <!-- Period Selector Bar -->
+    <div class="period-toolbar">
+      <div class="period-pills">
+        <button class="period-btn" [class.active]="selectedPeriod() === '1m'" (click)="setPeriod('1m')">1M (Mes actual)</button>
+        <button class="period-btn" [class.active]="selectedPeriod() === '3m'" (click)="setPeriod('3m')">3M (Trimestre)</button>
+        <button class="period-btn" [class.active]="selectedPeriod() === '6m'" (click)="setPeriod('6m')">6M</button>
+        <button class="period-btn" [class.active]="selectedPeriod() === 'ytd'" (click)="setPeriod('ytd')">Acumulado 2026</button>
+        <button class="period-btn" [class.active]="selectedPeriod() === 'annual'" (click)="setPeriod('annual')">Anual</button>
+      </div>
+      <div class="period-compliance">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+        <span>Cifras verificadas en {{ currency.name() }} ({{ currency.code() }}) • ISO 27001</span>
+      </div>
+    </div>
+
+    <!-- 4 KPI Metrics -->
+    <div class="metrics-grid">
+      <!-- Flujo Neto Total -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Flujo Neto Total</span>
+          <div class="metric-icon primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value" [class.safe]="flujoNeto() >= 0" [class.text-error]="flujoNeto() < 0">
+            {{ (flujoNeto() >= 0 ? '+' : '') + formatCurrency(flujoNeto()) }}
+          </span>
+        </div>
+        <div class="metric-foot">
+          <span class="foot-delta safe">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            Balance neto consolidado
+          </span>
+        </div>
+      </div>
+
+      <!-- Gasto Consolidado -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Gasto Consolidado</span>
+          <div class="metric-icon danger">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value">{{ formatCurrency(totalGastos()) }}</span>
+        </div>
+        <div class="metric-foot">
+          <span class="foot-delta safe">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            Egresos registrados en BD
+          </span>
+        </div>
+      </div>
+
+      <!-- Ratio Eficiencia -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Ratio de Eficiencia</span>
+          <div class="metric-icon accent">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value safe">{{ ratioEficiencia() }}%</span>
+        </div>
+        <div class="metric-foot">
+          <span class="foot-delta safe">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Margen de retención
+          </span>
+        </div>
+      </div>
+
+      <!-- Ahorro Fiscal SAT -->
+      <div class="metric-card">
+        <div class="metric-head">
+          <span class="metric-label">Ahorro Fiscal Estimado</span>
+          <div class="metric-icon primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value safe">{{ formatCurrency(ahorroFiscal()) }}</span>
+        </div>
+        <div class="metric-foot">
+          <span class="status-pill safe">12% deducible fiscal</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts & Analytics Section -->
+    <div class="analytics-row">
+      <!-- Main Chart Card -->
+      <div class="chart-card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Comparativa de Flujos Mensuales (2026)</h3>
+            <p class="card-subtitle">Ingresos Brutos vs Egresos Totales en {{ currency.name() }} ({{ currency.symbol() }})</p>
+          </div>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-dot income"></span> Ingresos</span>
+            <span class="legend-item"><span class="legend-dot expense"></span> Egresos</span>
+          </div>
+        </div>
+
+        <!-- Interactive SVG Bar Chart -->
+        <div class="svg-chart-wrapper">
+          <svg class="trend-chart" viewBox="0 0 700 240" preserveAspectRatio="none">
+            <!-- Grid Lines -->
+            <line x1="40" y1="40" x2="680" y2="40" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
+            <line x1="40" y1="90" x2="680" y2="90" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
+            <line x1="40" y1="140" x2="680" y2="140" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
+            <line x1="40" y1="190" x2="680" y2="190" stroke="rgba(255,255,255,0.1)"/>
+
+            <!-- Y Axis Labels -->
+            <text x="35" y="44" fill="#64748b" font-size="10" text-anchor="end">Max</text>
+            <text x="35" y="115" fill="#64748b" font-size="10" text-anchor="end">Med</text>
+            <text x="35" y="194" fill="#64748b" font-size="10" text-anchor="end">0</text>
+
+            <!-- Bars per month -->
+            @for (m of monthlyData(); track m.mes; let i = $index) {
+              <!-- Ingreso bar -->
+              <rect [attr.x]="65 + i * 68" [attr.y]="190 - (m.ingresos / maxMonthlyAmount()) * 140" width="18" [attr.height]="(m.ingresos / maxMonthlyAmount()) * 140" rx="3" fill="var(--accent)" class="chart-bar">
+                <title>Ingresos {{ m.mes }}: {{ formatCurrency(m.ingresos) }}</title>
+              </rect>
+              <!-- Gasto bar -->
+              <rect [attr.x]="87 + i * 68" [attr.y]="190 - (m.gastos / maxMonthlyAmount()) * 140" width="18" [attr.height]="(m.gastos / maxMonthlyAmount()) * 140" rx="3" fill="#f43f5e" class="chart-bar">
+                <title>Egresos {{ m.mes }}: {{ formatCurrency(m.gastos) }}</title>
+              </rect>
+              <!-- Month label -->
+              <text [attr.x]="85 + i * 68" y="215" fill="#94a3b8" font-size="11" text-anchor="middle" font-weight="600">{{ m.mes }}</text>
+            }
+          </svg>
+        </div>
+      </div>
+
+      <!-- Category Breakdown Card -->
+      <div class="breakdown-card">
+        <div class="card-header">
+          <h3 class="card-title">Distribución por Categoría</h3>
+          <p class="card-subtitle">Ponderación del gasto total en el período</p>
+        </div>
+
+        <div class="breakdown-list">
+          @for (cat of categoryBreakdown(); track cat.name) {
+            <div class="breakdown-item">
+              <div class="breakdown-info">
+                <span class="cat-lbl">{{ cat.name }}</span>
+                <span class="cat-amt">{{ formatCurrency(cat.amount) }} <span class="cat-pct">({{ cat.percentage }}%)</span></span>
+              </div>
+              <div class="breakdown-track">
+                <div class="breakdown-fill" [style.width.%]="cat.percentage"></div>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-cats text-center py-4" style="color: var(--text-muted); font-size: 0.88rem;">
+              No hay egresos registrados en el período seleccionado.
+            </div>
+          }
+        </div>
+
+        <div class="audit-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Auditoría Algorítmica Vought: Sin desvíos críticos detectados</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

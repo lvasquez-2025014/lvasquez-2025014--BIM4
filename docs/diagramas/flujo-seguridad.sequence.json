@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Ciclo de Vida de una Petición - Vought Control de Gastos",
+    "output": "docs/diagramas/flujo-seguridad.html",
+    "viewBox": [960, 780],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "full-flow",
+        "label": "Ciclo completo de petición",
+        "focus": ["user", "interceptor", "gateway", "guard", "service", "database", "charts"],
+        "note": "Traza completa desde la acción del usuario hasta el guardado en base de datos y la reactividad visual."
+      },
+      {
+        "id": "auth-validation",
+        "label": "Verificación de seguridad JWT",
+        "focus": ["interceptor", "gateway", "guard"],
+        "note": "Inyección del encabezado Authorization Bearer y validación de firma criptográfica en el guardián de rutas."
+      },
+      {
+        "id": "data-and-reactivity",
+        "label": "Persistencia y reactividad gráfica",
+        "focus": ["gateway", "service", "database", "charts"],
+        "note": "Inserción mediante driver nativo MongoDB y actualización instantánea en señales de Angular y gráficos SVG."
+      }
+    ]
+  },
+  "participants": [
+    { "id": "user", "type": "external", "label": "Usuario", "sublabel": "Navegador" },
+    { "id": "interceptor", "type": "frontend", "label": "Interceptor", "sublabel": "Token JWT" },
+    { "id": "gateway", "type": "backend", "label": "Controlador", "sublabel": "API REST" },
+    { "id": "guard", "type": "security", "label": "Guardián", "sublabel": "Filtro JWT" },
+    { "id": "service", "type": "backend", "label": "Servicio", "sublabel": "Gastos" },
+    { "id": "database", "type": "database", "label": "MongoDB", "sublabel": "Driver Nativo" },
+    { "id": "charts", "type": "frontend", "label": "Gráficos", "sublabel": "Signals + SVG" }
+  ],
+  "segments": [
+    { "from": 150, "to": 310, "label": "1. Seguridad y Autenticación" },
+    { "from": 330, "to": 520, "label": "2. Ejecución y Persistencia" },
+    { "from": 540, "to": 690, "label": "3. Reactividad y Renderizado" }
+  ],
+  "messages": [
+    { "id": "action", "from": "user", "to": "interceptor", "y": 185, "label": "Registrar Gasto / Ver Dashboard", "variant": "default" },
+    { "id": "attach-token", "from": "interceptor", "to": "gateway", "y": 228, "label": "POST /api/expenses (Token Bearer)", "variant": "emphasis" },
+    { "id": "check-jwt", "from": "gateway", "to": "guard", "y": 268, "label": "Verificar firma digital y expiración", "variant": "security" },
+    { "id": "jwt-valid", "from": "guard", "to": "gateway", "y": 305, "label": "Token verificado (@CurrentUser)", "variant": "return" },
+    { "id": "call-service", "from": "gateway", "to": "service", "y": 355, "label": "crearGasto(usuario, datosGasto)", "variant": "emphasis" },
+    { "id": "db-insert", "from": "service", "to": "database", "y": 400, "label": "insertarRegistro({ usuario, monto, fecha })", "variant": "emphasis" },
+    { "id": "db-ok", "from": "database", "to": "service", "y": 445, "label": "Confirmación de guardado exitoso", "variant": "return" },
+    { "id": "service-return", "from": "service", "to": "gateway", "y": 485, "label": "Documento persistido devuelto", "variant": "return" },
+    { "id": "http-201", "from": "gateway", "to": "interceptor", "y": 525, "label": "201 Creado (Respuesta JSON)", "variant": "return" },
+    { "id": "update-signal", "from": "interceptor", "to": "charts", "y": 570, "label": "Actualizar señal reactiva de gastos", "variant": "emphasis" },
+    { "id": "render-ui", "from": "charts", "to": "user", "y": 620, "label": "Gráficas SVG recalculadas en tiempo real", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "interceptor", "from": 185, "to": 580, "type": "frontend" },
+    { "participant": "gateway", "from": 228, "to": 530, "type": "backend" },
+    { "participant": "guard", "from": 268, "to": 310, "type": "security" },
+    { "participant": "service", "from": 355, "to": 490, "type": "backend" },
+    { "participant": "database", "from": 400, "to": 450, "type": "database" },
+    { "participant": "charts", "from": 570, "to": 630, "type": "frontend" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Autenticación sin Fricción",
+      "items": [
+        "El JwtInterceptor adjunta automáticamente el token en cada petición saliente",
+        "El JwtAuthGuard protege las rutas del backend y extrae el usuario autenticado",
+        "Sin credenciales quemadas: administración mediante scripts PowerShell seguros"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Rendimiento y Persistencia",
+      "items": [
+        "Driver nativo de MongoDB para transacciones ultra rápidas y tipadas",
+        "Aislamiento por usuario garantizado en cada consulta en base de datos",
+        "Estructura desacoplada en controladores, servicios y modelos DTO"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Reactividad en Frontend",
+      "items": [
+        "Angular Signals computa en tiempo real los totales, tendencias y balances",
+        "Gráficos vectoriales SVG dinámicos con eje cero y transición bicolor",
+        "Exportación estructurada en CSV/Excel con codificación UTF-8 BOM"
+      ]
+    }
+  ]
+}

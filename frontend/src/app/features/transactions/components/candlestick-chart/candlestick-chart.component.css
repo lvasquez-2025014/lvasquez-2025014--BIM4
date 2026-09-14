@@ -122,8 +122,8 @@
 
 .candlestick-y-axis span {
   text-align: right;
-  color: var(--placeholder);
-  font-size: 8px;
+  color: #94a3b8;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -154,10 +154,10 @@
 
 .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-.legend-dot.income { background: #10b981; }
+.legend-dot.income { background: var(--accent); }
 .legend-dot.expense { background: #ef4444; }
 .legend-dot.net { background: #38bdf8; }
-.legend-dot.balance { background: #10b981; }
+.legend-dot.balance { background: var(--accent); }
 
 .grid-line { stroke: rgba(255, 255, 255, .08); stroke-width: 1; stroke-dasharray: 6 4; }
 .zero-line { stroke: rgba(255, 255, 255, .34); stroke-width: 1.25; }
@@ -173,26 +173,22 @@
   left: 0;
   right: 0;
   height: 24px;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 20px;
   pointer-events: none;
 }
 
 .candlestick-x-axis span {
-  text-align: center;
-  color: var(--placeholder);
+  position: absolute;
+  color: #94a3b8;
   font-size: 11px;
   font-weight: 600;
   line-height: 24px;
-  opacity: 0.85;
   white-space: nowrap;
 }
 
 .candlestick-crosshair-v,
 .candlestick-crosshair-h {
   position: absolute;
-  background: rgba(159, 199, 178, 0.25);
+  background: var(--border-glow);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.08s;
@@ -216,7 +212,7 @@
   top: 10px;
   right: 12px;
   width: 175px;
-  background: rgba(13, 20, 16, 0.96);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px;

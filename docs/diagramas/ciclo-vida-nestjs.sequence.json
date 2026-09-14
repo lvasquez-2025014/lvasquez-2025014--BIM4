@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Ciclo de Vida de una Petición en NestJS",
+    "output": "docs/diagramas/ciclo-vida-nestjs.html",
+    "viewBox": [960, 780],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "full-lifecycle",
+        "label": "Ciclo de vida completo",
+        "focus": ["client", "middleware", "guard", "interceptor", "pipe", "controller", "service"],
+        "note": "Recorrido ordenado desde la capa de red hasta la ejecución del servicio y retorno de respuesta."
+      },
+      {
+        "id": "guards-and-pipes",
+        "label": "Seguridad y validación DTO",
+        "focus": ["middleware", "guard", "pipe"],
+        "note": "Principio Fail-Fast: validación de credenciales en Guard antes de parsear datos en Pipes."
+      },
+      {
+        "id": "execution-core",
+        "label": "Controlador y Servicio",
+        "focus": ["interceptor", "controller", "service"],
+        "note": "Desacoplamiento con decorador @CurrentUser e inyección de dependencias en el servicio."
+      }
+    ]
+  },
+  "participants": [
+    { "id": "client", "type": "external", "label": "Cliente", "sublabel": "Navegador Web" },
+    { "id": "middleware", "type": "backend", "label": "Middleware", "sublabel": "CORS / Express" },
+    { "id": "guard", "type": "security", "label": "Guardián", "sublabel": "Auth y Roles" },
+    { "id": "interceptor", "type": "backend", "label": "Interceptor", "sublabel": "AOP / Logging" },
+    { "id": "pipe", "type": "backend", "label": "Pipe", "sublabel": "Validación DTO" },
+    { "id": "controller", "type": "backend", "label": "Controlador", "sublabel": "Mapeo REST" },
+    { "id": "service", "type": "database", "label": "Servicio", "sublabel": "Lógica y BD" }
+  ],
+  "segments": [
+    { "from": 150, "to": 290, "label": "1. Entrada y Filtros de Red" },
+    { "from": 305, "to": 445, "label": "2. Validación y Ejecución" },
+    { "from": 460, "to": 600, "label": "3. Persistencia y Respuesta" }
+  ],
+  "messages": [
+    { "id": "req-in", "from": "client", "to": "middleware", "y": 180, "label": "Petición HTTP con Header Bearer", "variant": "default" },
+    { "id": "cors-ok", "from": "middleware", "to": "guard", "y": 220, "label": "Cabeceras CORS y Body parseado", "variant": "emphasis" },
+    { "id": "guard-check", "from": "guard", "to": "interceptor", "y": 260, "label": "canActivate() = true (Token y Rol)", "variant": "security" },
+    { "id": "interceptor-pre", "from": "interceptor", "to": "pipe", "y": 320, "label": "Cronómetro de auditoría iniciado", "variant": "emphasis" },
+    { "id": "pipe-validate", "from": "pipe", "to": "controller", "y": 360, "label": "DTO validado con class-validator", "variant": "emphasis" },
+    { "id": "ctrl-call", "from": "controller", "to": "service", "y": 400, "label": "Invocación con @CurrentUser y DTO", "variant": "emphasis" },
+    { "id": "srv-exec", "from": "service", "to": "controller", "y": 480, "label": "Resultado de persistencia en MongoDB", "variant": "return" },
+    { "id": "ctrl-return", "from": "controller", "to": "interceptor", "y": 520, "label": "Respuesta enviada al flujo de salida", "variant": "return" },
+    { "id": "interceptor-post", "from": "interceptor", "to": "client", "y": 560, "label": "Respuesta JSON + Tiempo de respuesta", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "middleware", "from": 180, "to": 225, "type": "backend" },
+    { "participant": "guard", "from": 220, "to": 265, "type": "security" },
+    { "participant": "interceptor", "from": 260, "to": 565, "type": "backend" },
+    { "participant": "pipe", "from": 320, "to": 365, "type": "backend" },
+    { "participant": "controller", "from": 360, "to": 525, "type": "backend" },
+    { "participant": "service", "from": 400, "to": 485, "type": "database" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Guards (Seguridad)",
+      "items": [
+        "Implementan CanActivate para proteger rutas por autenticación y roles",
+        "Tienen acceso a ExecutionContext para inspeccionar metadatos de ruta",
+        "Principio Fail-Fast: rechazan peticiones no autorizadas antes de procesar el body"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Pipes (Validación y DTO)",
+      "items": [
+        "Transforman tipos de datos (ParseIntPipe) y validan contratos DTO",
+        "Usan class-validator para evaluar reglas en tiempo de ejecución",
+        "La opción whitelist: true elimina propiedades no autorizadas"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Interceptors (AOP)",
+      "items": [
+        "Envuelven el flujo de ejecución antes y después del controlador",
+        "Permiten medir tiempos de respuesta y auditar llamadas en milisegundos",
+        "Transforman o enriquecen la estructura final del JSON devuelto"
+      ]
+    }
+  ]
+}
