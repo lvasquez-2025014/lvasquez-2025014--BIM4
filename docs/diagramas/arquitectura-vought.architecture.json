@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Arquitectura del Sistema - Vought Control de Gastos",
+    "quality_profile": "showcase",
+    "output": "docs/diagramas/arquitectura-vought.html",
+    "views": [
+      {
+        "id": "full-flow",
+        "label": "Flujo completo de extremo a extremo",
+        "focus": ["user", "frontend", "api", "services", "db_service", "mongodb"],
+        "note": "Ruta principal desde la interacción del usuario en el navegador hasta la persistencia en base de datos."
+      },
+      {
+        "id": "security-layer",
+        "label": "Capa de seguridad y autenticación",
+        "focus": ["user", "auth_guard", "api", "jwt_auth", "google_oauth"],
+        "note": "Aislamiento de guardianes en frontend y validación JWT / OAuth2 con control de acceso por roles (RBAC)."
+      },
+      {
+        "id": "data-persistence",
+        "label": "Persistencia y exportación",
+        "focus": ["frontend", "export_engine", "services", "db_service", "mongodb"],
+        "note": "Procesamiento de transacciones, pooling de conexiones y generación de reportes Excel / CSV con BOM UTF-8."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Usuario",
+      "sublabel": "Navegador Web / Móvil",
+      "pos": [40, 300],
+      "size": [120, 60]
+    },
+    {
+      "id": "frontend",
+      "type": "frontend",
+      "label": "Frontend Angular",
+      "sublabel": "v19 Standalone + Signals",
+      "brand": "angular",
+      "pos": [240, 300],
+      "size": [140, 64],
+      "tag": "UI Reactiva"
+    },
+    {
+      "id": "auth_guard",
+      "type": "security",
+      "label": "Guardianes de Ruta",
+      "sublabel": "AuthGuard + AdminGuard",
+      "pos": [240, 110],
+      "size": [140, 60],
+      "tag": "Filtros RBAC"
+    },
+    {
+      "id": "export_engine",
+      "type": "frontend",
+      "label": "Motor de Reportes",
+      "sublabel": "Excel UTF-8 BOM (;)",
+      "pos": [240, 480],
+      "size": [140, 60],
+      "tag": "Descargas"
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API REST NestJS",
+      "sublabel": "Controladores :3000",
+      "pos": [480, 300],
+      "size": [140, 64],
+      "tag": "Prefijo /api"
+    },
+    {
+      "id": "jwt_auth",
+      "type": "security",
+      "label": "Seguridad JWT",
+      "sublabel": "Passport + RolesGuard",
+      "pos": [480, 110],
+      "size": [140, 60],
+      "tag": "Admin / Cliente"
+    },
+    {
+      "id": "google_oauth",
+      "type": "external",
+      "label": "Acceso con Google",
+      "sublabel": "Google OAuth 2.0",
+      "pos": [480, 480],
+      "size": [140, 60],
+      "tag": "Google Sign-In"
+    },
+    {
+      "id": "services",
+      "type": "backend",
+      "label": "Capa de Servicios",
+      "sublabel": "Gastos y Presupuestos",
+      "pos": [720, 300],
+      "size": [140, 64],
+      "tag": "Lógica Negocio"
+    },
+    {
+      "id": "db_service",
+      "type": "backend",
+      "label": "DatabaseService",
+      "sublabel": "Pool nativo TCP",
+      "pos": [720, 110],
+      "size": [140, 60],
+      "tag": "Singleton"
+    },
+    {
+      "id": "mongodb",
+      "type": "database",
+      "label": "Base NoSQL MongoDB",
+      "sublabel": "Colecciones JSON",
+      "brand": "mongodb",
+      "pos": [960, 210],
+      "size": [140, 64],
+      "tag": "Puerto :27017"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Capa Cliente (Angular 19 SPA)",
+      "wraps": ["frontend", "auth_guard", "export_engine"]
+    },
+    {
+      "kind": "region",
+      "label": "Capa Servidor (NestJS Modular)",
+      "wraps": ["api", "jwt_auth", "services", "db_service"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Persistencia NoSQL",
+      "wraps": ["mongodb"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "user-to-frontend",
+      "from": "user",
+      "to": "frontend",
+      "label": "HTTPS / Web",
+      "variant": "emphasis"
+    },
+    {
+      "id": "frontend-to-guard",
+      "from": "frontend",
+      "to": "auth_guard",
+      "label": "Verificar Permisos",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "frontend-to-export",
+      "from": "frontend",
+      "to": "export_engine",
+      "label": "Generar CSV / Excel",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 30
+    },
+    {
+      "id": "frontend-to-api",
+      "from": "frontend",
+      "to": "api",
+      "label": "REST + JWT",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-to-jwt",
+      "from": "api",
+      "to": "jwt_auth",
+      "label": "Validar Firma JWT",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "api-to-google",
+      "from": "api",
+      "to": "google_oauth",
+      "label": "Validar Google",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 30
+    },
+    {
+      "id": "api-to-services",
+      "from": "api",
+      "to": "services",
+      "label": "Llamada a Servicio"
+    },
+    {
+      "id": "services-to-dbservice",
+      "from": "services",
+      "to": "db_service",
+      "label": "Obtener Colección",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "dbservice-to-mongo",
+      "from": "db_service",
+      "to": "mongodb",
+      "label": "Driver TCP",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend Reactivo (Angular 19)",
+      "items": [
+        "Componentes Standalone con Signals y computed() para estado 100% reactivo",
+        "Gráficos SVG nativos con curva bicolor y detección de cruce por cero",
+        "Conversión de moneda en tiempo real (GTQ, USD, EUR) y utilidades de fecha local"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Backend Modular (NestJS + TypeScript)",
+      "items": [
+        "Arquitectura desacoplada en módulos (Auth, Expense, Category, Budget, User)",
+        "Seguridad robusta con Passport JWT, bcrypt (10 rounds) y RBAC (@Roles)",
+        "Integración de autenticación Google OAuth2 y scripts PowerShell de administración"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Persistencia y Datos (MongoDB Nativo)",
+      "items": [
+        "Driver oficial de MongoDB mediante DatabaseService singleton sin sobrecarga de ORM",
+        "Colecciones optimizadas para auditoría, índices por usuario y agregaciones",
+        "Exportaciones formateadas con BOM UTF-8 y delimitador para compatibilidad total con Excel"
+      ]
+    }
+  ]
+}
