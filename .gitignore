@@ -25,3 +25,5 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+archify-tool/
+.agents/

@@ -1,5 +1,8 @@
-export interface Expense {
+import type { Document } from 'mongodb';
+
+export interface Expense extends Document {
   _id?: string;
+  usuario: string;
   descripcion: string;
   monto: number;
   tipo: 'Ingreso' | 'Gasto';

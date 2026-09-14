@@ -1,5 +1,4 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     "module": "nodenext",
     "target": "es2022",
@@ -8,24 +7,13 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
     "rootDir": "./src",
- 
-    // Other Outputs
     "sourceMap": false,
     "declaration": false,
     "declarationMap": false,
- 
-    // Stricter Typechecking Options
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
- 
-    // Recommended Options
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "strict": true,
-    "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*"]
 }
