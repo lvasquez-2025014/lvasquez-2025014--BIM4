@@ -2,13 +2,13 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 10000;
+  z-index: 10000000;
   pointer-events: none;
 }
 
 .toast {
-  --toast-color: #10b981;
-  --toast-rgb: 16, 185, 129;
+  --toast-color: var(--accent);
+  --toast-rgb: var(--accent-rgb, 99, 102, 241);
   position: relative;
   display: flex;
   align-items: flex-start;
